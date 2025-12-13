@@ -1,5 +1,6 @@
 export interface GroceryItem {
   id: string;
+  userId: string; // Owner of this grocery item
   name: string;
   category: string; // Now supports dynamic categories
   imageUrl?: string;
@@ -11,6 +12,7 @@ export interface GroceryItem {
 
 export interface CategoryItem {
   id: string;
+  userId: string; // Owner of this category
   name: string;
   icon: string;
   color: string;
@@ -18,10 +20,11 @@ export interface CategoryItem {
   createdAt: Date;
 }
 
-// Default categories that cannot be deleted
+// Default categories that cannot be deleted - shared across all users
 export const DEFAULT_CATEGORIES: CategoryItem[] = [
   {
     id: 'produce',
+    userId: 'system', // System-level default, available to all users
     name: 'Produce',
     icon: 'nutrition',
     color: 'text-green-500',
@@ -30,6 +33,7 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
   },
   {
     id: 'dairy',
+    userId: 'system',
     name: 'Dairy & Eggs',
     icon: 'water_drop',
     color: 'text-blue-400',
@@ -38,6 +42,7 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
   },
   {
     id: 'pantry',
+    userId: 'system',
     name: 'Pantry',
     icon: 'soup_kitchen',
     color: 'text-orange-400',
@@ -46,6 +51,7 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
   },
   {
     id: 'baby',
+    userId: 'system',
     name: 'Baby Needs',
     icon: 'child_care',
     color: 'text-pink-500',
@@ -54,6 +60,7 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
   },
   {
     id: 'other',
+    userId: 'system',
     name: 'Other',
     icon: 'category',
     color: 'text-slate-400',

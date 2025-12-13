@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect, OnDestroy } from '@angular/core';
 import {
   Firestore,
   collection,
@@ -9,26 +9,62 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
+  Unsubscribe,
 } from '@angular/fire/firestore';
 import { Assignee } from './overview.model';
+import { UserService } from '../users/user.service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class AssigneeService {
+export class AssigneeService implements OnDestroy {
   private firestore = inject(Firestore);
+  private userService = inject(UserService);
   private COLLECTION = 'assignees';
 
   private assigneesSignal = signal<Assignee[]>([]);
   readonly assignees = computed(() => this.assigneesSignal());
 
+  private unsubAssignees: Unsubscribe | null = null;
+
   constructor() {
-    this.subscribeToAssignees();
+    // React to user changes - reinitialize listeners when user changes
+    effect(() => {
+      const currentUser = this.userService.currentUser();
+      this.cleanupSubscription();
+
+      if (currentUser) {
+        this.subscribeToAssignees(currentUser.id);
+      } else {
+        // Clear data when no user is logged in
+        this.assigneesSignal.set([]);
+      }
+    });
   }
 
-  private subscribeToAssignees() {
-    const q = query(collection(this.firestore, this.COLLECTION), orderBy('name'));
-    onSnapshot(
+  private getCurrentUserId(): string {
+    const user = this.userService.currentUser();
+    return user?.id || '';
+  }
+
+  private cleanupSubscription(): void {
+    if (this.unsubAssignees) {
+      this.unsubAssignees();
+      this.unsubAssignees = null;
+    }
+  }
+
+  private subscribeToAssignees(userId: string) {
+    if (!userId) return;
+
+    const q = query(
+      collection(this.firestore, this.COLLECTION),
+      where('userId', '==', userId),
+      orderBy('name')
+    );
+
+    this.unsubAssignees = onSnapshot(
       q,
       (snapshot) => {
         const items = snapshot.docs.map((doc) => ({
@@ -44,18 +80,21 @@ export class AssigneeService {
   }
 
   async createAssignee(name: string, color: string) {
+    const userId = this.getCurrentUserId();
+    if (!userId) throw new Error('User must be logged in to create assignees');
+
     const initial = name.charAt(0).toUpperCase();
     await addDoc(collection(this.firestore, this.COLLECTION), {
       name,
       color,
       initial,
+      userId,
     });
   }
 
-  async updateAssignee(id: string, data: Partial<Assignee>) {
+  async updateAssignee(id: string, data: Partial<Omit<Assignee, 'id' | 'userId'>>) {
     if (data.name) {
       // Update initial if specific name is provided
-      // Use type assertion logic if needed or just set it
       (data as any).initial = data.name.charAt(0).toUpperCase();
     }
     await updateDoc(doc(this.firestore, this.COLLECTION, id), data);
@@ -67,5 +106,9 @@ export class AssigneeService {
 
   getAssignee(id: string) {
     return this.assigneesSignal().find((a) => a.id === id);
+  }
+
+  ngOnDestroy() {
+    this.cleanupSubscription();
   }
 }

@@ -1,7 +1,7 @@
 import { GroceryItem } from './grocery.model';
 
 // Seed data for dairy & eggs items with images from Pexels
-export const DAIRY_SEED_DATA: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt'>[] = [
+export const DAIRY_SEED_DATA: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[] = [
   // Milk & Cream
   {
     name: 'Whole Milk',

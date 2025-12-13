@@ -1,7 +1,7 @@
 import { GroceryItem } from './grocery.model';
 
 // Seed data for baby needs items with images from Pexels
-export const BABY_SEED_DATA: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt'>[] = [
+export const BABY_SEED_DATA: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[] = [
   // Diapers & Wipes
   {
     name: 'Diapers (Newborn)',

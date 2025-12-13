@@ -1,7 +1,7 @@
 import { GroceryItem } from './grocery.model';
 
 // Seed data for pantry items with images from Pexels
-export const PANTRY_SEED_DATA: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt'>[] = [
+export const PANTRY_SEED_DATA: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[] = [
   // Pasta & Grains
   {
     name: 'Spaghetti',

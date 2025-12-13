@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, OnDestroy } from '@angular/core';
+import { Injectable, signal, computed, OnDestroy, inject, effect } from '@angular/core';
 import {
   getFirestore,
   collection,
@@ -9,15 +9,18 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
   Firestore,
   Unsubscribe,
 } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { environment } from '../../environments/environment';
 import { OverviewTask } from './overview.model';
+import { UserService } from '../users/user.service';
 
 @Injectable({ providedIn: 'root' })
 export class OverviewService implements OnDestroy {
+  private userService = inject(UserService);
   private firestore: Firestore;
   private TASKS_COLLECTION = 'overview_tasks';
 
@@ -29,14 +32,42 @@ export class OverviewService implements OnDestroy {
   constructor() {
     const app = initializeApp(environment.firebase);
     this.firestore = getFirestore(app);
-    this.initRealtimeData();
+
+    // React to user changes - reinitialize listeners when user changes
+    effect(() => {
+      const currentUser = this.userService.currentUser();
+      this.cleanupSubscription();
+
+      if (currentUser) {
+        this.initRealtimeData(currentUser.id);
+      } else {
+        // Clear data when no user is logged in
+        this.tasksSignal.set([]);
+      }
+    });
   }
 
-  private initRealtimeData(): void {
+  private getCurrentUserId(): string {
+    const user = this.userService.currentUser();
+    return user?.id || '';
+  }
+
+  private cleanupSubscription(): void {
+    if (this.unsubTasks) {
+      this.unsubTasks();
+      this.unsubTasks = null;
+    }
+  }
+
+  private initRealtimeData(userId: string): void {
+    if (!userId) return;
+
     const q = query(
       collection(this.firestore, this.TASKS_COLLECTION),
+      where('userId', '==', userId),
       orderBy('createdAt', 'desc')
     );
+
     this.unsubTasks = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map((doc) => {
         const data = doc.data();
@@ -63,16 +94,23 @@ export class OverviewService implements OnDestroy {
     });
   }
 
-  async createTask(task: Omit<OverviewTask, 'id' | 'createdAt'>): Promise<void> {
+  async createTask(task: Omit<OverviewTask, 'id' | 'createdAt' | 'userId'>): Promise<void> {
+    const userId = this.getCurrentUserId();
+    if (!userId) throw new Error('User must be logged in to create tasks');
+
     const id = `task_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     await setDoc(doc(this.firestore, this.TASKS_COLLECTION, id), {
       ...task,
       id,
+      userId,
       createdAt: new Date(),
     });
   }
 
-  async updateTask(id: string, updates: Partial<OverviewTask>): Promise<void> {
+  async updateTask(
+    id: string,
+    updates: Partial<Omit<OverviewTask, 'id' | 'userId'>>
+  ): Promise<void> {
     await updateDoc(doc(this.firestore, this.TASKS_COLLECTION, id), updates);
   }
 
@@ -81,6 +119,6 @@ export class OverviewService implements OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.unsubTasks) this.unsubTasks();
+    this.cleanupSubscription();
   }
 }

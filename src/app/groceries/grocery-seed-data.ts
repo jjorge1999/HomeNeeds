@@ -1,7 +1,7 @@
 import { GroceryItem } from './grocery.model';
 
 // Seed data for produce items with images from reliable sources
-export const PRODUCE_SEED_DATA: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt'>[] = [
+export const PRODUCE_SEED_DATA: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[] = [
   // Fruits
   {
     name: 'Red Apples',

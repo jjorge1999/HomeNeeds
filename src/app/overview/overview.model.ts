@@ -1,5 +1,6 @@
 export interface OverviewTask {
   id: string;
+  userId: string; // Owner of this task
   title: string;
   description?: string;
   category: 'groceries' | 'chores' | 'repairs' | 'other';
@@ -12,6 +13,7 @@ export interface OverviewTask {
 
 export interface Assignee {
   id: string;
+  userId: string; // Owner of this assignee
   name: string;
   initial: string;
   color: string;

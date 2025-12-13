@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, OnDestroy } from '@angular/core';
+import { Injectable, signal, computed, OnDestroy, inject, effect } from '@angular/core';
 import {
   getFirestore,
   collection,
@@ -8,6 +8,7 @@ import {
   updateDoc,
   query,
   orderBy,
+  where,
   onSnapshot,
   Firestore,
   Unsubscribe,
@@ -19,11 +20,13 @@ import { PRODUCE_SEED_DATA } from './grocery-seed-data';
 import { DAIRY_SEED_DATA } from './dairy-seed-data';
 import { PANTRY_SEED_DATA } from './pantry-seed-data';
 import { BABY_SEED_DATA } from './baby-seed-data';
+import { UserService } from '../users/user.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GroceryService implements OnDestroy {
+  private userService = inject(UserService);
   private firestore: Firestore;
   private readonly GROCERIES_COLLECTION = 'groceries';
   private readonly CATEGORIES_COLLECTION = 'categories';
@@ -126,19 +129,50 @@ export class GroceryService implements OnDestroy {
   constructor() {
     // Explicitly initialize app to ensure it exists
     const app = initializeApp(environment.firebase);
-    // Remove Auth to avoid config errors
-    // const auth = getAuth(app);
     this.firestore = getFirestore(app);
 
-    // Initialize listeners directly
-    this.initializeFirestoreListeners();
-    this.checkAndMigrateData();
+    // React to user changes - reinitialize listeners when user changes
+    effect(() => {
+      const currentUser = this.userService.currentUser();
+      this.cleanupSubscriptions();
+
+      if (currentUser) {
+        this.initializeFirestoreListeners(currentUser.id);
+        this.checkAndMigrateData(currentUser.id);
+      } else {
+        // Clear data when no user is logged in
+        this.groceriesSignal.set([]);
+        this.categoriesSignal.set([...DEFAULT_CATEGORIES]);
+        this.isLoadingSignal.set(false);
+      }
+    });
   }
 
-  private initializeFirestoreListeners(): void {
-    // Listen to groceries collection
+  private getCurrentUserId(): string {
+    const user = this.userService.currentUser();
+    return user?.id || '';
+  }
+
+  private cleanupSubscriptions(): void {
+    if (this.unsubGroceries) {
+      this.unsubGroceries();
+      this.unsubGroceries = null;
+    }
+    if (this.unsubCategories) {
+      this.unsubCategories();
+      this.unsubCategories = null;
+    }
+  }
+
+  private initializeFirestoreListeners(userId: string): void {
+    if (!userId) return;
+
+    this.isLoadingSignal.set(true);
+
+    // Listen to groceries collection - filtered by userId
     const groceriesRef = query(
       collection(this.firestore, this.GROCERIES_COLLECTION),
+      where('userId', '==', userId),
       orderBy('name')
     );
 
@@ -162,9 +196,9 @@ export class GroceryService implements OnDestroy {
         this.groceriesSignal.set(groceries);
         this.isLoadingSignal.set(false);
 
-        // Seed data if empty
+        // Seed data if empty for this user
         if (groceries.length === 0 && !this.isSeededSignal()) {
-          this.seedInitialData();
+          this.seedInitialData(userId);
         }
       },
       (error) => {
@@ -174,8 +208,11 @@ export class GroceryService implements OnDestroy {
       }
     );
 
-    // Listen to categories collection
-    const categoriesRef = collection(this.firestore, this.CATEGORIES_COLLECTION);
+    // Listen to categories collection - both system and user categories
+    const categoriesRef = query(
+      collection(this.firestore, this.CATEGORIES_COLLECTION),
+      where('userId', 'in', ['system', userId])
+    );
 
     this.unsubCategories = onSnapshot(
       categoriesRef,
@@ -215,11 +252,11 @@ export class GroceryService implements OnDestroy {
     );
   }
 
-  private async seedInitialData(): Promise<void> {
+  private async seedInitialData(userId: string): Promise<void> {
     if (this.isSeededSignal()) return;
     this.isSeededSignal.set(true);
 
-    console.log('Seeding initial grocery data...');
+    console.log('Seeding initial grocery data for user:', userId);
 
     const allSeedData = [
       ...PRODUCE_SEED_DATA,
@@ -228,12 +265,11 @@ export class GroceryService implements OnDestroy {
       ...BABY_SEED_DATA,
     ];
 
-    // Batch create all items
-    // Using Promise.all for parallel creation for better performance
+    // Batch create all items with userId
     const batchPromises = allSeedData.map((item) => this.create(item));
     await Promise.all(batchPromises);
 
-    console.log(`Seeded ${allSeedData.length} grocery items`);
+    console.log(`Seeded ${allSeedData.length} grocery items for user ${userId}`);
   }
 
   private async saveCategoryToFirestore(category: CategoryItem): Promise<void> {
@@ -246,11 +282,15 @@ export class GroceryService implements OnDestroy {
 
   // Category CRUD Operations
   async createCategory(
-    category: Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault'>
+    category: Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault' | 'userId'>
   ): Promise<CategoryItem> {
+    const userId = this.getCurrentUserId();
+    if (!userId) throw new Error('User must be logged in to create categories');
+
     const newCategory: CategoryItem = {
       ...category,
       id: this.generateCategoryId(category.name),
+      userId,
       isDefault: false,
       createdAt: new Date(),
     };
@@ -265,7 +305,7 @@ export class GroceryService implements OnDestroy {
 
   async updateCategory(
     id: string,
-    updates: Partial<Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault'>>
+    updates: Partial<Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault' | 'userId'>>
   ): Promise<CategoryItem | undefined> {
     const category = this.getCategory(id);
     if (!category || category.isDefault) return undefined;
@@ -327,11 +367,17 @@ export class GroceryService implements OnDestroy {
     this.sortBySignal.set(sortBy);
   }
 
-  // CRUD Operations with Firestore
-  async create(item: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<GroceryItem> {
+  // CRUD Operations with Firestore - now includes userId
+  async create(
+    item: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  ): Promise<GroceryItem> {
+    const userId = this.getCurrentUserId();
+    if (!userId) throw new Error('User must be logged in to create items');
+
     const newItem: GroceryItem = {
       ...item,
       id: this.generateId(),
+      userId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -344,7 +390,7 @@ export class GroceryService implements OnDestroy {
 
   async update(
     id: string,
-    updates: Partial<Omit<GroceryItem, 'id' | 'createdAt'>>
+    updates: Partial<Omit<GroceryItem, 'id' | 'createdAt' | 'userId'>>
   ): Promise<GroceryItem | undefined> {
     const item = this.groceriesSignal().find((i) => i.id === id);
     if (!item) return undefined;
@@ -408,6 +454,9 @@ export class GroceryService implements OnDestroy {
   private readonly HISTORY_COLLECTION = 'shopping_history';
 
   async saveToHistory(): Promise<void> {
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
+
     const items = this.cartItems();
     if (items.length === 0) return;
 
@@ -416,6 +465,7 @@ export class GroceryService implements OnDestroy {
 
     const historyData = {
       id: historyId,
+      userId,
       date: new Date(),
       itemCount: items.length,
       items: items.map((i) => ({
@@ -438,16 +488,16 @@ export class GroceryService implements OnDestroy {
     return `cat_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
   }
 
-  private checkAndMigrateData(): void {
-    // Check for seed data updates
-    const SEED_VERSION = 'v12';
-    const storedVersion = localStorage.getItem('homeneeds_seed_version');
+  private checkAndMigrateData(userId: string): void {
+    // Check for seed data updates - now per user
+    const SEED_VERSION = 'v13'; // Incremented version for user-based data
+    const storedVersion = localStorage.getItem(`homeneeds_seed_version_${userId}`);
 
     if (storedVersion !== SEED_VERSION) {
-      console.log(`Migrating data to ${SEED_VERSION}...`);
+      console.log(`Migrating data to ${SEED_VERSION} for user ${userId}...`);
       // Use non-destructive migration
       this.migrateMissingSeedData().then(() => {
-        localStorage.setItem('homeneeds_seed_version', SEED_VERSION);
+        localStorage.setItem(`homeneeds_seed_version_${userId}`, SEED_VERSION);
       });
     }
   }
@@ -477,11 +527,6 @@ export class GroceryService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.unsubGroceries) {
-      this.unsubGroceries();
-    }
-    if (this.unsubCategories) {
-      this.unsubCategories();
-    }
+    this.cleanupSubscriptions();
   }
 }
