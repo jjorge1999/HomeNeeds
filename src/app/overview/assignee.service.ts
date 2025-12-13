@@ -34,10 +34,13 @@ export class AssigneeService implements OnDestroy {
       const currentUser = this.userService.currentUser();
       this.cleanupSubscription();
 
-      if (currentUser) {
+      // Only load data if user is logged in AND has a valid userId
+      if (currentUser && currentUser.userId) {
+        console.log('👥 Loading assignees for user:', currentUser.userId);
         this.subscribeToAssignees(currentUser.userId);
       } else {
-        // Clear data when no user is logged in
+        // Clear data when no user is logged in - DO NOT query Firestore
+        console.log('🔒 No user logged in - clearing assignee data');
         this.assigneesSignal.set([]);
       }
     });

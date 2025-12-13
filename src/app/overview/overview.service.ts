@@ -38,10 +38,13 @@ export class OverviewService implements OnDestroy {
       const currentUser = this.userService.currentUser();
       this.cleanupSubscription();
 
-      if (currentUser) {
+      // Only load data if user is logged in AND has a valid userId
+      if (currentUser && currentUser.userId) {
+        console.log('📋 Loading tasks for user:', currentUser.userId);
         this.initRealtimeData(currentUser.userId);
       } else {
-        // Clear data when no user is logged in
+        // Clear data when no user is logged in - DO NOT query Firestore
+        console.log('🔒 No user logged in - clearing task data');
         this.tasksSignal.set([]);
       }
     });

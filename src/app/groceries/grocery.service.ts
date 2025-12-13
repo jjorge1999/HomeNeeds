@@ -136,11 +136,14 @@ export class GroceryService implements OnDestroy {
       const currentUser = this.userService.currentUser();
       this.cleanupSubscriptions();
 
-      if (currentUser) {
+      // Only load data if user is logged in AND has a valid userId
+      if (currentUser && currentUser.userId) {
+        console.log('📦 Loading groceries for user:', currentUser.userId);
         this.initializeFirestoreListeners(currentUser.userId);
         this.checkAndMigrateData(currentUser.userId);
       } else {
-        // Clear data when no user is logged in
+        // Clear data when no user is logged in - DO NOT query Firestore
+        console.log('🔒 No user logged in - clearing grocery data');
         this.groceriesSignal.set([]);
         this.categoriesSignal.set([...DEFAULT_CATEGORIES]);
         this.isLoadingSignal.set(false);
