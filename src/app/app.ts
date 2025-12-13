@@ -5,6 +5,13 @@ import { OverviewService } from './overview/overview.service';
 import { UserService } from './users/user.service';
 import { User } from './users/user.model';
 
+// Extend Window interface for dev console access
+declare global {
+  interface Window {
+    userService: UserService;
+  }
+}
+
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, RouterLink, DialogComponent],
@@ -32,6 +39,15 @@ export class App {
   pendingItemsCount = computed(() => {
     return this.overviewService.tasks().filter((t) => !t.isCompleted).length;
   });
+
+  constructor() {
+    // Expose UserService on window for dev console migration
+    // Usage: window.userService.manualMigrateAllUsers()
+    (window as any).userService = this.userService;
+    console.log('🔧 Dev Console: window.userService is available');
+    console.log('   → Run: window.userService.manualMigrateAllUsers()');
+    console.log('   → Check: window.userService.getUsersNeedingMigration()');
+  }
 
   selectUser(user: User) {
     if (user.password) {
