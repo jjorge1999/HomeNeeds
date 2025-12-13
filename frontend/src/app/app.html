@@ -17,16 +17,6 @@
         <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Groceries</span>
         <span class="ml-auto text-xs font-bold bg-slate-200 dark:bg-border-dark dark:group-hover:bg-slate-600 px-2 py-1 rounded-full min-w-[24px] text-center">8</span>
       </a>
-      <a id="nav-cleaning" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
-        <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">cleaning_services</span>
-        <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Cleaning</span>
-        <span class="ml-auto text-xs font-bold bg-slate-200 dark:bg-border-dark dark:group-hover:bg-slate-600 px-2 py-1 rounded-full min-w-[24px] text-center">3</span>
-      </a>
-      <a id="nav-repairs" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
-        <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">home_repair_service</span>
-        <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Repairs</span>
-        <span class="ml-auto text-xs font-bold bg-slate-200 dark:bg-border-dark dark:group-hover:bg-slate-600 px-2 py-1 rounded-full min-w-[24px] text-center">2</span>
-      </a>
       <a id="nav-settings" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
         <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">settings</span>
         <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Settings</span>
@@ -39,7 +29,7 @@
         <span class="material-symbols-outlined text-text-muted">pending_actions</span>
         <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">Today</span>
       </div>
-      <p class="text-3xl font-black text-white leading-tight mb-1">13</p>
+      <p class="text-3xl font-black text-white leading-tight mb-1">{{ pendingItemsCount() }}</p>
       <p class="text-xs text-text-muted font-medium">Items Pending</p>
     </div>
     <div id="user-profile" class="flex items-center gap-3 p-4 rounded-full bg-surface-dark cursor-pointer hover:bg-border-dark transition-colors">
@@ -55,3 +45,4 @@
 <div class="flex-1 h-screen flex flex-col overflow-hidden">
   <router-outlet></router-outlet>
 </div>
+<app-dialog></app-dialog>

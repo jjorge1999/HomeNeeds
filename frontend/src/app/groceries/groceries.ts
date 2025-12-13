@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { GroceryService } from './grocery.service';
 import { ImageService } from './image.service';
 import { GroceryItem, CategoryItem, CATEGORY_ICONS, CATEGORY_COLORS } from './grocery.model';
+import { OverviewService } from '../overview/overview.service';
+import { DialogService } from '../shared/dialog/dialog.service';
 
 @Component({
   selector: 'app-groceries',
@@ -17,6 +19,8 @@ import { GroceryItem, CategoryItem, CATEGORY_ICONS, CATEGORY_COLORS } from './gr
 export class GroceriesComponent {
   private groceryService = inject(GroceryService);
   private imageService = inject(ImageService);
+  private dialogService = inject(DialogService);
+  private overviewService = inject(OverviewService);
 
   // Expose service signals to template
   groceries = this.groceryService.groceries;
@@ -39,6 +43,7 @@ export class GroceriesComponent {
   // Form state - Grocery Items
   newItemName = '';
   showAddModal = false;
+  isAddingFromSidebar = false;
   editingItem: GroceryItem | null = null;
   editItemName = '';
   editItemCategory = 'other';
@@ -105,23 +110,25 @@ export class GroceriesComponent {
     this.closeCategoryModal();
   }
 
-  deleteCategory(categoryId: string): void {
+  async deleteCategory(categoryId: string): Promise<void> {
     const category = this.groceryService.getCategory(categoryId);
     if (!category || category.isDefault) return;
 
     // Check item count first
     const itemCount = this.groceryService.getItemCountInCategory(categoryId);
     if (itemCount > 0) {
-      alert(
+      await this.dialogService.alert(
         `Cannot delete category "${category.name}" because it has ${itemCount} item(s). Please move or delete the items first.`
       );
       return;
     }
 
-    if (confirm(`Delete category "${category.name}"?`)) {
+    if (
+      await this.dialogService.confirm(`Delete category "${category.name}"?`, 'Delete Category')
+    ) {
       const result = this.groceryService.deleteCategory(categoryId);
       if (!result.success && result.error) {
-        alert(result.error);
+        await this.dialogService.alert(result.error);
       }
     }
   }
@@ -143,7 +150,7 @@ export class GroceriesComponent {
     if (!file) return;
 
     if (!this.imageService.isValidImageFile(file)) {
-      alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+      await this.dialogService.alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
       return;
     }
 
@@ -154,7 +161,7 @@ export class GroceriesComponent {
       this.editItemImageUrl = compressedImage;
     } catch (error) {
       console.error('Error compressing image:', error);
-      alert('Failed to process image. Please try again.');
+      await this.dialogService.alert('Failed to process image. Please try again.');
     } finally {
       this.isUploadingImage = false;
       input.value = '';
@@ -222,7 +229,8 @@ export class GroceriesComponent {
     this.showAddModal = true;
   }
 
-  openAddModal(): void {
+  openAddModal(fromSidebar: boolean = false): void {
+    this.isAddingFromSidebar = fromSidebar;
     this.editingItem = null;
     this.editItemName = '';
     this.editItemCategory = 'other';
@@ -243,9 +251,16 @@ export class GroceriesComponent {
           name: this.editItemName.trim(),
           category: this.editItemCategory,
           imageUrl: this.editItemImageUrl.trim() || undefined,
-          isInCart: false,
+          isInCart: this.isAddingFromSidebar,
           isChecked: false,
         });
+
+        if (this.isAddingFromSidebar) {
+          this.createOverviewTask(
+            this.editItemName.trim(),
+            this.editItemImageUrl.trim() || undefined
+          );
+        }
       }
       this.cancelEdit();
     }
@@ -263,10 +278,18 @@ export class GroceriesComponent {
 
   async addToCart(id: string): Promise<void> {
     await this.groceryService.addToCart(id);
+    const item = this.groceries().find((i) => i.id === id);
+    if (item) {
+      this.createOverviewTask(item.name, item.imageUrl);
+    }
   }
 
   async removeFromCart(id: string): Promise<void> {
+    const item = this.groceries().find((i) => i.id === id);
     await this.groceryService.removeFromCart(id);
+    if (item) {
+      this.removeOverviewTask(item.name);
+    }
   }
 
   async toggleChecked(id: string): Promise<void> {
@@ -274,19 +297,27 @@ export class GroceriesComponent {
   }
 
   async clearCart(): Promise<void> {
+    // Collect items to remove tasks for
+    const itemsToRemove = this.cartItems();
     await this.groceryService.clearCart();
+    // Remove tasks
+    for (const item of itemsToRemove) {
+      this.removeOverviewTask(item.name);
+    }
   }
 
   async checkout(): Promise<void> {
     if (this.cartItems().length === 0) return;
 
-    if (confirm('Complete shopping trip and save to history?')) {
+    if (
+      await this.dialogService.confirm('Complete shopping trip and save to history?', 'Checkout')
+    ) {
       try {
         await this.groceryService.saveToHistory();
         await this.groceryService.clearCart();
       } catch (err) {
         console.error('Checkout failed', err);
-        alert('Failed to save history. Please check your connection.');
+        await this.dialogService.alert('Failed to save history. Please check your connection.');
       }
     }
   }
@@ -330,8 +361,34 @@ export class GroceriesComponent {
   }
 
   async resetData(): Promise<void> {
-    if (confirm('This will reset all grocery data to the default seed data. Continue?')) {
+    if (
+      await this.dialogService.confirm(
+        'This will reset all grocery data to the default seed data. Continue?',
+        'Reset Data'
+      )
+    ) {
       await this.groceryService.resetToSeedData();
+    }
+  }
+
+  private createOverviewTask(title: string, imageUrl?: string) {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 3);
+
+    this.overviewService.createTask({
+      title: title,
+      category: 'groceries',
+      isCompleted: false,
+      dueDate: dueDate,
+      imageUrl: imageUrl,
+    });
+  }
+
+  private async removeOverviewTask(title: string) {
+    const tasks = this.overviewService.tasks();
+    const task = tasks.find((t) => t.title === title && t.category === 'groceries');
+    if (task) {
+      await this.overviewService.deleteTask(task.id);
     }
   }
 }
