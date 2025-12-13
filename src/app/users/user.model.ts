@@ -2,7 +2,8 @@ export type UserRole = 'admin' | 'member' | 'guest';
 export type UserStatus = 'active' | 'pending' | 'inactive' | 'offline' | 'away';
 
 export interface User {
-  id: string;
+  id: string; // Firestore document ID
+  userId: string; // Auto-generated unique ID for data isolation (e.g., user_abc123)
   name: string;
   password?: string;
   role: UserRole;

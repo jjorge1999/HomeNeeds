@@ -92,13 +92,25 @@ export class UserService {
     this.currentUser.set(null);
   }
 
-  async createUser(user: Omit<User, 'id' | 'createdAt' | 'lastActive'>) {
+  async createUser(user: Omit<User, 'id' | 'userId' | 'createdAt' | 'lastActive'>) {
+    const userId = this.generateUserId();
     await addDoc(this.usersCollection, {
       ...user,
+      userId, // Auto-generated userId for data isolation
       status: user.status || 'pending',
       lastActive: serverTimestamp(),
       createdAt: serverTimestamp(),
     });
+  }
+
+  /**
+   * Generates a unique userId for data isolation
+   * Format: user_<timestamp>_<random>
+   */
+  private generateUserId(): string {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 8);
+    return `user_${timestamp}_${random}`;
   }
 
   async updateUser(id: string, data: Partial<User>) {

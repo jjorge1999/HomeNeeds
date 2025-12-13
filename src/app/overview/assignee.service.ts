@@ -35,7 +35,7 @@ export class AssigneeService implements OnDestroy {
       this.cleanupSubscription();
 
       if (currentUser) {
-        this.subscribeToAssignees(currentUser.id);
+        this.subscribeToAssignees(currentUser.userId);
       } else {
         // Clear data when no user is logged in
         this.assigneesSignal.set([]);
@@ -45,7 +45,7 @@ export class AssigneeService implements OnDestroy {
 
   private getCurrentUserId(): string {
     const user = this.userService.currentUser();
-    return user?.id || '';
+    return user?.userId || '';
   }
 
   private cleanupSubscription(): void {

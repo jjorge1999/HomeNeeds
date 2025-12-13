@@ -39,7 +39,7 @@ export class OverviewService implements OnDestroy {
       this.cleanupSubscription();
 
       if (currentUser) {
-        this.initRealtimeData(currentUser.id);
+        this.initRealtimeData(currentUser.userId);
       } else {
         // Clear data when no user is logged in
         this.tasksSignal.set([]);
@@ -49,7 +49,7 @@ export class OverviewService implements OnDestroy {
 
   private getCurrentUserId(): string {
     const user = this.userService.currentUser();
-    return user?.id || '';
+    return user?.userId || '';
   }
 
   private cleanupSubscription(): void {

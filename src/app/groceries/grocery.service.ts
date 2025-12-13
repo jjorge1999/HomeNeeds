@@ -137,8 +137,8 @@ export class GroceryService implements OnDestroy {
       this.cleanupSubscriptions();
 
       if (currentUser) {
-        this.initializeFirestoreListeners(currentUser.id);
-        this.checkAndMigrateData(currentUser.id);
+        this.initializeFirestoreListeners(currentUser.userId);
+        this.checkAndMigrateData(currentUser.userId);
       } else {
         // Clear data when no user is logged in
         this.groceriesSignal.set([]);
@@ -150,7 +150,7 @@ export class GroceryService implements OnDestroy {
 
   private getCurrentUserId(): string {
     const user = this.userService.currentUser();
-    return user?.id || '';
+    return user?.userId || '';
   }
 
   private cleanupSubscriptions(): void {
