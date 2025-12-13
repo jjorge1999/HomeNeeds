@@ -25,6 +25,9 @@ export class UserService {
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
 
+  // Track migration status
+  private migrationInProgress = signal<boolean>(false);
+
   constructor() {
     this.subscribeToUsers();
     this.restoreSession();
@@ -40,6 +43,8 @@ export class UserService {
           return {
             id: doc.id,
             ...data,
+            // Ensure userId exists (for backwards compatibility)
+            userId: data.userId || null,
             lastActive: data.lastActive?.toDate ? data.lastActive.toDate() : data.lastActive,
             createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
           } as User;
@@ -47,6 +52,9 @@ export class UserService {
         this.users.set(usersData);
         this.updateCurrentUserReference(usersData);
         this.loading.set(false);
+
+        // Auto-migrate users without userId
+        this.migrateUsersWithoutUserId(usersData);
       },
       (err) => {
         console.error('Error fetching users', err);
@@ -54,6 +62,38 @@ export class UserService {
         this.loading.set(false);
       }
     );
+  }
+
+  /**
+   * Automatically migrates existing users that don't have a userId field.
+   * This runs silently in the background when users are loaded.
+   */
+  private async migrateUsersWithoutUserId(users: User[]): Promise<void> {
+    // Prevent multiple migrations running at once
+    if (this.migrationInProgress()) return;
+
+    const usersNeedingMigration = users.filter((user) => !user.userId);
+
+    if (usersNeedingMigration.length === 0) return;
+
+    this.migrationInProgress.set(true);
+    console.log(`🔄 Migrating ${usersNeedingMigration.length} user(s) without userId...`);
+
+    try {
+      const migrationPromises = usersNeedingMigration.map(async (user) => {
+        const newUserId = this.generateUserId();
+        console.log(`  → Migrating user "${user.name}" (${user.id}) → userId: ${newUserId}`);
+        await this.updateUser(user.id, { userId: newUserId } as any);
+        return { name: user.name, userId: newUserId };
+      });
+
+      const results = await Promise.all(migrationPromises);
+      console.log(`✅ Successfully migrated ${results.length} user(s):`, results);
+    } catch (error) {
+      console.error('❌ Error during user migration:', error);
+    } finally {
+      this.migrationInProgress.set(false);
+    }
   }
 
   private restoreSession() {
@@ -78,6 +118,13 @@ export class UserService {
   }
 
   async login(user: User) {
+    // Ensure user has userId before login (shouldn't happen after migration, but safety check)
+    if (!user.userId) {
+      const newUserId = this.generateUserId();
+      await this.updateUser(user.id, { userId: newUserId } as any);
+      user = { ...user, userId: newUserId };
+    }
+
     localStorage.setItem('currentUserId', user.id);
     this.currentUser.set(user);
     await this.updateUser(user.id, { status: 'active', lastActive: serverTimestamp() });
@@ -119,5 +166,43 @@ export class UserService {
 
   async deleteUser(id: string) {
     await deleteDoc(doc(this.firestore, 'users', id));
+  }
+
+  /**
+   * Manually trigger migration for all users without userId.
+   * Can be called from the Users component or admin panel if needed.
+   */
+  async manualMigrateAllUsers(): Promise<{ migrated: number; errors: number }> {
+    const users = this.users();
+    const usersNeedingMigration = users.filter((user) => !user.userId);
+
+    if (usersNeedingMigration.length === 0) {
+      console.log('✅ All users already have userId assigned.');
+      return { migrated: 0, errors: 0 };
+    }
+
+    let migrated = 0;
+    let errors = 0;
+
+    for (const user of usersNeedingMigration) {
+      try {
+        const newUserId = this.generateUserId();
+        await this.updateUser(user.id, { userId: newUserId } as any);
+        console.log(`✅ Migrated user "${user.name}" → ${newUserId}`);
+        migrated++;
+      } catch (error) {
+        console.error(`❌ Failed to migrate user "${user.name}":`, error);
+        errors++;
+      }
+    }
+
+    return { migrated, errors };
+  }
+
+  /**
+   * Get count of users needing migration
+   */
+  getUsersNeedingMigration(): User[] {
+    return this.users().filter((user) => !user.userId);
   }
 }
