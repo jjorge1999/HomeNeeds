@@ -62,10 +62,11 @@ export class OverviewService implements OnDestroy {
   private initRealtimeData(userId: string): void {
     if (!userId) return;
 
+    // Query without orderBy to avoid index requirement
+    // Sorting is done client-side
     const q = query(
       collection(this.firestore, this.TASKS_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     );
 
     this.unsubTasks = onSnapshot(q, (snapshot) => {
@@ -90,6 +91,8 @@ export class OverviewService implements OnDestroy {
           createdAt,
         } as OverviewTask;
       });
+      // Sort client-side by createdAt descending
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       this.tasksSignal.set(items);
     });
   }

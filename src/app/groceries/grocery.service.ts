@@ -170,10 +170,10 @@ export class GroceryService implements OnDestroy {
     this.isLoadingSignal.set(true);
 
     // Listen to groceries collection - filtered by userId
+    // Note: No orderBy to avoid index requirement - sorting is done in computed signal
     const groceriesRef = query(
       collection(this.firestore, this.GROCERIES_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('name')
+      where('userId', '==', userId)
     );
 
     this.unsubGroceries = onSnapshot(

@@ -58,11 +58,9 @@ export class AssigneeService implements OnDestroy {
   private subscribeToAssignees(userId: string) {
     if (!userId) return;
 
-    const q = query(
-      collection(this.firestore, this.COLLECTION),
-      where('userId', '==', userId),
-      orderBy('name')
-    );
+    // Query without orderBy to avoid index requirement
+    // Sorting is done client-side
+    const q = query(collection(this.firestore, this.COLLECTION), where('userId', '==', userId));
 
     this.unsubAssignees = onSnapshot(
       q,
@@ -71,6 +69,8 @@ export class AssigneeService implements OnDestroy {
           id: doc.id,
           ...doc.data(),
         })) as Assignee[];
+        // Sort client-side by name
+        items.sort((a, b) => a.name.localeCompare(b.name));
         this.assigneesSignal.set(items);
       },
       (error) => {
