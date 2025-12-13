@@ -1,4 +1,4 @@
-<aside class="w-80 h-screen flex-shrink-0 border-r border-slate-200 dark:border-border-dark bg-white dark:bg-background-dark flex flex-col justify-between p-6">
+<aside id="app-sidebar" class="w-80 h-screen flex-shrink-0 border-r border-slate-200 dark:border-border-dark bg-white dark:bg-background-dark flex flex-col justify-between p-6">
   <div>
     <div class="flex flex-col mb-8">
       <div class="flex items-center gap-2 mb-1">
@@ -7,34 +7,34 @@
       </div>
       <p class="text-sm text-slate-500 dark:text-text-muted">Manage your home effortlessly</p>
     </div>
-    <nav class="flex flex-col gap-2">
-      <a routerLink="/overview" routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group">
+    <nav id="main-nav" class="flex flex-col gap-2">
+      <a id="nav-overview" routerLink="/overview" routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group">
         <span class="material-symbols-outlined filled">dashboard</span>
         <span class="font-bold text-sm">Overview</span>
       </a>
-      <a routerLink="/groceries" routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group">
+      <a id="nav-groceries" routerLink="/groceries" routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group">
         <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">shopping_cart</span>
         <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Groceries</span>
         <span class="ml-auto text-xs font-bold bg-slate-200 dark:bg-border-dark dark:group-hover:bg-slate-600 px-2 py-1 rounded-full min-w-[24px] text-center">8</span>
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
+      <a id="nav-cleaning" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
         <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">cleaning_services</span>
         <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Cleaning</span>
         <span class="ml-auto text-xs font-bold bg-slate-200 dark:bg-border-dark dark:group-hover:bg-slate-600 px-2 py-1 rounded-full min-w-[24px] text-center">3</span>
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
+      <a id="nav-repairs" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
         <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">home_repair_service</span>
         <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Repairs</span>
         <span class="ml-auto text-xs font-bold bg-slate-200 dark:bg-border-dark dark:group-hover:bg-slate-600 px-2 py-1 rounded-full min-w-[24px] text-center">2</span>
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
+      <a id="nav-settings" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
         <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">settings</span>
         <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Settings</span>
       </a>
     </nav>
   </div>
   <div class="flex flex-col gap-4 mt-8">
-    <div class="p-5 rounded-2xl bg-surface-dark/40 border border-border-dark backdrop-blur-sm">
+    <div id="stats-card" class="p-5 rounded-2xl bg-surface-dark/40 border border-border-dark backdrop-blur-sm">
       <div class="flex justify-between items-start mb-2">
         <span class="material-symbols-outlined text-text-muted">pending_actions</span>
         <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">Today</span>
@@ -42,7 +42,7 @@
       <p class="text-3xl font-black text-white leading-tight mb-1">13</p>
       <p class="text-xs text-text-muted font-medium">Items Pending</p>
     </div>
-    <div class="flex items-center gap-3 p-4 rounded-full bg-surface-dark cursor-pointer hover:bg-border-dark transition-colors">
+    <div id="user-profile" class="flex items-center gap-3 p-4 rounded-full bg-surface-dark cursor-pointer hover:bg-border-dark transition-colors">
       <img alt="User avatar" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCafQa1ZU_I0ZwGgwCGyMoJtBppJjLzqhlpWO7eF8_-ECq1C0oDP8p_x1_AF0Yb1ALek4TtZGVva8G2auDRBiZ5Xk7AyW_i5kQS47PAmVCp6jHPQtvQY8-a-swXqRzPBDL6y7CdFA0fcb6_Ycy2moQ7lERcs4GKTiGdTC2wELb2oFHPbhPl76vQUDtcgMS9Lq0caoKzc36zBBq8ttCEnRMP6XF1mn9LJU53THRtQdowz1jIZpBOvgks3f4F8kRXW7Y5viukzKfx3-L6"/>
       <div class="flex flex-col">
         <span class="text-sm font-bold text-white leading-none">Alex Morgan</span>
@@ -52,4 +52,6 @@
     </div>
   </div>
 </aside>
-<router-outlet></router-outlet>
+<div class="flex-1 h-screen flex flex-col overflow-hidden">
+  <router-outlet></router-outlet>
+</div>

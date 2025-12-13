@@ -1,17 +1,17 @@
-<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<main id="overview-page" class="flex-1 flex flex-col h-screen overflow-y-auto relative">
   <div class="px-8 pt-8 pb-4 w-full z-10 bg-transparent flex flex-col gap-4">
     <label class="flex flex-col w-full group">
       <div class="flex w-full items-center rounded-full h-14 bg-white dark:bg-surface-dark shadow-sm border border-slate-200 dark:border-border-dark focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all duration-300 px-6">
         <span class="material-symbols-outlined text-slate-400 dark:text-text-muted group-focus-within:text-primary transition-colors">search</span>
-        <input class="w-full bg-transparent border-none focus:ring-0 text-base font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-muted-darker ml-3" placeholder="Search for items to buy, fix, or clean..."/>
-        <button class="bg-primary hover:bg-primary-hover text-slate-900 p-2 rounded-full transition-colors flex items-center justify-center">
+        <input id="overview-search-input" class="w-full bg-transparent border-none focus:ring-0 text-base font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-muted-darker ml-3" placeholder="Search for items to buy, fix, or clean..."/>
+        <button id="btn-add-item" class="bg-primary hover:bg-primary-hover text-slate-900 p-2 rounded-full transition-colors flex items-center justify-center">
           <span class="material-symbols-outlined text-[20px] font-bold">add</span>
         </button>
       </div>
     </label>
     <div class="flex items-center gap-3 px-2">
       <span class="text-xs uppercase font-bold text-slate-500 dark:text-text-muted tracking-wider">Filter by Due Date:</span>
-      <div class="flex gap-2">
+      <div id="filter-chips" class="flex gap-2">
         <label class="cursor-pointer group">
           <input class="peer sr-only" name="filter-date" type="radio"/>
           <span class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-600 dark:text-text-muted transition-all peer-checked:bg-primary/20 peer-checked:text-primary peer-checked:border-primary peer-hover:border-primary/50">
@@ -23,6 +23,7 @@
           <input class="peer sr-only" name="filter-date" type="radio"/>
           <span class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-600 dark:text-text-muted transition-all peer-checked:bg-rose-400/20 peer-checked:text-rose-400 peer-checked:border-rose-400 peer-hover:border-rose-400/50">
             <span class="material-symbols-outlined text-[16px]">warning</span>
+            
             Overdue
           </span>
         </label>
@@ -60,17 +61,17 @@
           <p class="text-slate-500 dark:text-text-muted">You have 13 pending items across 3 categories.</p>
         </div>
         <div class="flex gap-3">
-          <button class="flex items-center gap-2 px-5 py-2.5 rounded-full border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-white font-bold text-sm hover:bg-slate-100 dark:hover:bg-border-dark transition-colors">
+          <button id="btn-share-list" class="flex items-center gap-2 px-5 py-2.5 rounded-full border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-white font-bold text-sm hover:bg-slate-100 dark:hover:bg-border-dark transition-colors">
             <span class="material-symbols-outlined text-sm">share</span>
             Share List
           </button>
-          <button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-slate-900 font-bold text-sm hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20">
+          <button id="btn-new-task" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-slate-900 font-bold text-sm hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20">
             <span class="material-symbols-outlined text-sm">add_task</span>
             New Task
           </button>
         </div>
       </div>
-      <section>
+      <section id="section-groceries">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
             <span class="w-2 h-8 bg-amber-400 rounded-full block"></span>
@@ -166,7 +167,7 @@
           </div>
         </div>
       </section>
-      <section>
+      <section id="section-cleaning">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
             <span class="w-2 h-8 bg-blue-400 rounded-full block"></span>
@@ -228,7 +229,7 @@
           </div>
         </div>
       </section>
-      <section class="pb-20">
+      <section id="section-repairs" class="pb-20">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
             <span class="w-2 h-8 bg-purple-500 rounded-full block"></span>
@@ -271,7 +272,7 @@
       </section>
     </div>
   </div>
-  <button class="absolute bottom-10 right-10 w-16 h-16 bg-primary hover:bg-primary-hover rounded-full shadow-2xl shadow-primary/20 text-slate-900 flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-50">
+  <button id="btn-fab-add" class="absolute bottom-10 right-10 w-16 h-16 bg-primary hover:bg-primary-hover rounded-full shadow-2xl shadow-primary/20 text-slate-900 flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-50">
     <span class="material-symbols-outlined" style="font-size: 32px;">add</span>
   </button>
 </main>

@@ -6,7 +6,7 @@ import { Component } from '@angular/core';
   templateUrl: './overview.html',
   styleUrl: './overview.css',
   host: {
-    class: 'flex-1 min-w-0',
+    class: 'flex-1 h-screen flex flex-col overflow-hidden',
   },
 })
 export class OverviewComponent {}
