@@ -1,0 +1,277 @@
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+  <div class="px-8 pt-8 pb-4 w-full z-10 bg-transparent flex flex-col gap-4">
+    <label class="flex flex-col w-full group">
+      <div class="flex w-full items-center rounded-full h-14 bg-white dark:bg-surface-dark shadow-sm border border-slate-200 dark:border-border-dark focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all duration-300 px-6">
+        <span class="material-symbols-outlined text-slate-400 dark:text-text-muted group-focus-within:text-primary transition-colors">search</span>
+        <input class="w-full bg-transparent border-none focus:ring-0 text-base font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-muted-darker ml-3" placeholder="Search for items to buy, fix, or clean..."/>
+        <button class="bg-primary hover:bg-primary-hover text-slate-900 p-2 rounded-full transition-colors flex items-center justify-center">
+          <span class="material-symbols-outlined text-[20px] font-bold">add</span>
+        </button>
+      </div>
+    </label>
+    <div class="flex items-center gap-3 px-2">
+      <span class="text-xs uppercase font-bold text-slate-500 dark:text-text-muted tracking-wider">Filter by Due Date:</span>
+      <div class="flex gap-2">
+        <label class="cursor-pointer group">
+          <input class="peer sr-only" name="filter-date" type="radio"/>
+          <span class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-600 dark:text-text-muted transition-all peer-checked:bg-primary/20 peer-checked:text-primary peer-checked:border-primary peer-hover:border-primary/50">
+            <span class="material-symbols-outlined text-[16px]">all_inclusive</span>
+            All
+          </span>
+        </label>
+        <label class="cursor-pointer group">
+          <input class="peer sr-only" name="filter-date" type="radio"/>
+          <span class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-600 dark:text-text-muted transition-all peer-checked:bg-rose-400/20 peer-checked:text-rose-400 peer-checked:border-rose-400 peer-hover:border-rose-400/50">
+            <span class="material-symbols-outlined text-[16px]">warning</span>
+            Overdue
+          </span>
+        </label>
+        <label class="cursor-pointer group">
+          <input checked="" class="peer sr-only" name="filter-date" type="radio"/>
+          <span class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-600 dark:text-text-muted transition-all peer-checked:bg-amber-400/20 peer-checked:text-amber-400 peer-checked:border-amber-400 peer-hover:border-amber-400/50">
+            <span class="material-symbols-outlined text-[16px]">today</span>
+            Today
+          </span>
+        </label>
+        <label class="cursor-pointer group">
+          <input class="peer sr-only" name="filter-date" type="radio"/>
+          <span class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-600 dark:text-text-muted transition-all peer-checked:bg-blue-400/20 peer-checked:text-blue-400 peer-checked:border-blue-400 peer-hover:border-blue-400/50">
+            <span class="material-symbols-outlined text-[16px]">event_upcoming</span>
+            Upcoming
+          </span>
+        </label>
+        <label class="cursor-pointer group ml-auto">
+          <div class="relative">
+            <input class="peer sr-only" type="checkbox"/>
+            <span class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-surface-dark text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-text-muted-darker dark:hover:text-text-muted transition-colors cursor-pointer select-none">
+              <span class="material-symbols-outlined text-[18px]">filter_list</span>
+              More Filters
+            </span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="flex-1 overflow-y-auto px-8 pb-20 scroll-smooth">
+    <div class="w-full flex flex-col gap-10">
+      <div class="flex flex-wrap justify-between items-end gap-4 mt-4 border-b border-border-dark pb-6">
+        <div>
+          <h2 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2">My Lists</h2>
+          <p class="text-slate-500 dark:text-text-muted">You have 13 pending items across 3 categories.</p>
+        </div>
+        <div class="flex gap-3">
+          <button class="flex items-center gap-2 px-5 py-2.5 rounded-full border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-white font-bold text-sm hover:bg-slate-100 dark:hover:bg-border-dark transition-colors">
+            <span class="material-symbols-outlined text-sm">share</span>
+            Share List
+          </button>
+          <button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-slate-900 font-bold text-sm hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20">
+            <span class="material-symbols-outlined text-sm">add_task</span>
+            New Task
+          </button>
+        </div>
+      </div>
+      <section>
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            <span class="w-2 h-8 bg-amber-400 rounded-full block"></span>
+            Groceries
+          </h3>
+          <span class="text-xs font-bold bg-amber-400/10 text-amber-400 px-3 py-1 rounded-full">8 Items</span>
+        </div>
+        <div class="grid grid-cols-1 gap-3">
+          <div class="draggable-item group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-transparent dark:border-border-dark hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-none relative overflow-hidden active:scale-[0.99] active:shadow-inner" draggable="true">
+            <span class="material-symbols-outlined text-slate-300 dark:text-border-dark group-hover:text-slate-400 dark:group-hover:text-slate-500 cursor-grab active:cursor-grabbing select-none transition-colors" title="Drag to reorder">drag_indicator</span>
+            <label class="relative flex items-center p-2 rounded-full cursor-pointer" for="check1">
+              <input class="custom-checkbox before:content[''] peer relative h-6 w-6 cursor-pointer appearance-none rounded-full border-2 border-slate-400 dark:border-slate-500 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-slate-500 before:opacity-0 before:transition-opacity checked:border-primary checked:bg-primary checked:before:bg-primary hover:before:opacity-10" id="check1" type="checkbox"/>
+            </label>
+            <div class="flex flex-col flex-1 z-10">
+              <div class="flex items-center gap-3">
+                <span class="text-base font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Almond Milk (Unsweetened)</span>
+                <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-400/10 text-rose-400 text-[10px] font-bold uppercase tracking-wider">
+                  <span class="material-symbols-outlined text-[12px]">alarm</span>
+                  Today 5PM
+                </span>
+              </div>
+              <span class="text-sm text-slate-500 dark:text-text-muted-darker">2 Cartons • Whole Foods</span>
+            </div>
+            <div class="flex items-center gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              <div class="relative group/reminder">
+                <button class="p-2 text-slate-400 hover:text-primary hover:bg-border-dark rounded-full transition-colors flex items-center" title="Set Reminder">
+                  <span class="material-symbols-outlined text-[20px]">notification_add</span>
+                </button>
+                <input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30" title="Pick date and time" type="datetime-local"/>
+              </div>
+              <button class="p-2 text-slate-400 hover:text-white hover:bg-border-dark rounded-full transition-colors" title="Add Note">
+                <span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+              </button>
+              <button class="p-2 text-slate-400 hover:text-rose-400 hover:bg-border-dark rounded-full transition-colors" title="Delete">
+                <span class="material-symbols-outlined text-[20px]">delete</span>
+              </button>
+            </div>
+          </div>
+          <div class="draggable-item group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-transparent dark:border-border-dark hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-none relative overflow-hidden active:scale-[0.99] active:shadow-inner" draggable="true">
+            <span class="material-symbols-outlined text-slate-300 dark:text-border-dark group-hover:text-slate-400 dark:group-hover:text-slate-500 cursor-grab active:cursor-grabbing select-none transition-colors" title="Drag to reorder">drag_indicator</span>
+            <label class="relative flex items-center p-2 rounded-full cursor-pointer" for="check2">
+              <input class="custom-checkbox peer h-6 w-6 cursor-pointer appearance-none rounded-full border-2 border-slate-400 dark:border-slate-500 transition-all checked:border-primary checked:bg-primary" id="check2" type="checkbox"/>
+            </label>
+            <div class="flex flex-col flex-1">
+              <div class="flex items-center gap-3">
+                <span class="text-base font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Organic Eggs</span>
+              </div>
+              <span class="text-sm text-slate-500 dark:text-text-muted-darker">1 Dozen</span>
+            </div>
+            <div class="flex items-center gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="relative">
+                <button class="p-2 text-slate-400 hover:text-primary hover:bg-border-dark rounded-full transition-colors flex items-center" title="Set Reminder">
+                  <span class="material-symbols-outlined text-[20px]">notification_add</span>
+                </button>
+                <input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" title="Pick date and time" type="datetime-local"/>
+              </div>
+              <button class="p-2 text-slate-400 hover:text-white hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+              </button>
+              <button class="p-2 text-slate-400 hover:text-rose-400 hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">delete</span>
+              </button>
+            </div>
+          </div>
+          <div class="draggable-item group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-transparent dark:border-border-dark hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-none relative overflow-hidden active:scale-[0.99] active:shadow-inner" draggable="true">
+            <span class="material-symbols-outlined text-slate-300 dark:text-border-dark group-hover:text-slate-400 dark:group-hover:text-slate-500 cursor-grab active:cursor-grabbing select-none transition-colors" title="Drag to reorder">drag_indicator</span>
+            <label class="relative flex items-center p-2 rounded-full cursor-pointer" for="check3">
+              <input class="custom-checkbox peer h-6 w-6 cursor-pointer appearance-none rounded-full border-2 border-slate-400 dark:border-slate-500 transition-all checked:border-primary checked:bg-primary" id="check3" type="checkbox"/>
+            </label>
+            <div class="flex flex-col flex-1">
+              <div class="flex items-center gap-3">
+                <span class="text-base font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Avocados</span>
+                <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-border-dark text-text-muted text-[10px] font-bold uppercase tracking-wider">
+                  <span class="material-symbols-outlined text-[12px]">alarm</span>
+                  Tomorrow 9AM
+                </span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="relative">
+                <button class="p-2 text-slate-400 hover:text-primary hover:bg-border-dark rounded-full transition-colors flex items-center" title="Set Reminder">
+                  <span class="material-symbols-outlined text-[20px]">notification_add</span>
+                </button>
+                <input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" title="Pick date and time" type="datetime-local"/>
+              </div>
+              <button class="p-2 text-slate-400 hover:text-white hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+              </button>
+              <button class="p-2 text-slate-400 hover:text-rose-400 hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section>
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            <span class="w-2 h-8 bg-blue-400 rounded-full block"></span>
+            Cleaning Supplies
+          </h3>
+          <span class="text-xs font-bold bg-blue-400/10 text-blue-400 px-3 py-1 rounded-full">3 Items</span>
+        </div>
+        <div class="grid grid-cols-1 gap-3">
+          <div class="draggable-item group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-transparent dark:border-border-dark hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-none relative overflow-hidden active:scale-[0.99] active:shadow-inner" draggable="true">
+            <span class="material-symbols-outlined text-slate-300 dark:text-border-dark group-hover:text-slate-400 dark:group-hover:text-slate-500 cursor-grab active:cursor-grabbing select-none transition-colors" title="Drag to reorder">drag_indicator</span>
+            <label class="relative flex items-center p-2 rounded-full cursor-pointer" for="check4">
+              <input class="custom-checkbox peer h-6 w-6 cursor-pointer appearance-none rounded-full border-2 border-slate-400 dark:border-slate-500 transition-all checked:border-primary checked:bg-primary" id="check4" type="checkbox"/>
+            </label>
+            <div class="flex flex-col flex-1">
+              <div class="flex items-center gap-3">
+                <span class="text-base font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Laundry Detergent</span>
+              </div>
+              <span class="text-sm text-slate-500 dark:text-text-muted-darker">Sensitive Skin variant</span>
+            </div>
+            <div class="flex items-center gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="relative">
+                <button class="p-2 text-slate-400 hover:text-primary hover:bg-border-dark rounded-full transition-colors flex items-center" title="Set Reminder">
+                  <span class="material-symbols-outlined text-[20px]">notification_add</span>
+                </button>
+                <input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" title="Pick date and time" type="datetime-local"/>
+              </div>
+              <button class="p-2 text-slate-400 hover:text-white hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+              </button>
+              <button class="p-2 text-slate-400 hover:text-rose-400 hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">delete</span>
+              </button>
+            </div>
+          </div>
+          <div class="draggable-item group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-transparent dark:border-border-dark hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-none relative overflow-hidden active:scale-[0.99] active:shadow-inner" draggable="true">
+            <span class="material-symbols-outlined text-slate-300 dark:text-border-dark group-hover:text-slate-400 dark:group-hover:text-slate-500 cursor-grab active:cursor-grabbing select-none transition-colors" title="Drag to reorder">drag_indicator</span>
+            <label class="relative flex items-center p-2 rounded-full cursor-pointer" for="check5">
+              <input class="custom-checkbox peer h-6 w-6 cursor-pointer appearance-none rounded-full border-2 border-slate-400 dark:border-slate-500 transition-all checked:border-primary checked:bg-primary" id="check5" type="checkbox"/>
+            </label>
+            <div class="flex flex-col flex-1">
+              <div class="flex items-center gap-3">
+                <span class="text-base font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Dish Soap</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="relative">
+                <button class="p-2 text-slate-400 hover:text-primary hover:bg-border-dark rounded-full transition-colors flex items-center" title="Set Reminder">
+                  <span class="material-symbols-outlined text-[20px]">notification_add</span>
+                </button>
+                <input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" title="Pick date and time" type="datetime-local"/>
+              </div>
+              <button class="p-2 text-slate-400 hover:text-white hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+              </button>
+              <button class="p-2 text-slate-400 hover:text-rose-400 hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="pb-20">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            <span class="w-2 h-8 bg-purple-500 rounded-full block"></span>
+            Repairs
+          </h3>
+          <span class="text-xs font-bold bg-purple-500/10 text-purple-400 px-3 py-1 rounded-full">2 Items</span>
+        </div>
+        <div class="grid grid-cols-1 gap-3">
+          <div class="draggable-item group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-transparent dark:border-border-dark hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-none relative overflow-hidden active:scale-[0.99] active:shadow-inner" draggable="true">
+            <span class="material-symbols-outlined text-slate-300 dark:text-border-dark group-hover:text-slate-400 dark:group-hover:text-slate-500 cursor-grab active:cursor-grabbing select-none transition-colors" title="Drag to reorder">drag_indicator</span>
+            <label class="relative flex items-center p-2 rounded-full cursor-pointer" for="check6">
+              <input class="custom-checkbox peer h-6 w-6 cursor-pointer appearance-none rounded-full border-2 border-slate-400 dark:border-slate-500 transition-all checked:border-primary checked:bg-primary" id="check6" type="checkbox"/>
+            </label>
+            <div class="flex flex-col flex-1">
+              <div class="flex items-center gap-3">
+                <span class="text-base font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Fix Kitchen Sink Faucet</span>
+                <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-400/10 text-purple-400 text-[10px] font-bold uppercase tracking-wider">
+                  <span class="material-symbols-outlined text-[12px]">alarm</span>
+                  Sat 2PM
+                </span>
+              </div>
+              <span class="text-sm text-slate-500 dark:text-text-muted-darker">Leaking, need wrench</span>
+            </div>
+            <div class="flex items-center gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="relative">
+                <button class="p-2 text-slate-400 hover:text-primary hover:bg-border-dark rounded-full transition-colors flex items-center" title="Set Reminder">
+                  <span class="material-symbols-outlined text-[20px]">notification_add</span>
+                </button>
+                <input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" title="Pick date and time" type="datetime-local"/>
+              </div>
+              <button class="p-2 text-slate-400 hover:text-white hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+              </button>
+              <button class="p-2 text-slate-400 hover:text-rose-400 hover:bg-border-dark rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <button class="absolute bottom-10 right-10 w-16 h-16 bg-primary hover:bg-primary-hover rounded-full shadow-2xl shadow-primary/20 text-slate-900 flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-50">
+    <span class="material-symbols-outlined" style="font-size: 32px;">add</span>
+  </button>
+</main>

@@ -1,0 +1,315 @@
+  <!-- Main Content (Left Panel) -->
+  <main class="flex-1 flex flex-col overflow-y-auto relative h-full">
+    <div class="w-full px-6 py-8 flex flex-col gap-6">
+      <!-- Search and Add Section -->
+      <div class="flex flex-col md:flex-row gap-4">
+        <!-- Search Bar -->
+        <div class="flex-1 relative group">
+          <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+            <span class="material-symbols-outlined">search</span>
+          </div>
+          <input class="w-full h-12 pl-12 pr-4 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm" placeholder="Search for items (e.g. Avocado, Milk)..." type="text"/>
+        </div>
+        <!-- Quick Add -->
+        <div class="md:w-[350px] relative flex">
+          <input class="w-full h-12 pl-4 pr-12 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm" placeholder="Add custom item..." type="text"/>
+          <button class="absolute right-2 top-2 size-8 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg flex items-center justify-center transition-colors">
+            <span class="material-symbols-outlined text-[20px]">add</span>
+          </button>
+        </div>
+      </div>
+      <!-- Chips Filter -->
+      <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-slate-900 dark:bg-white px-4 hover:opacity-90 transition-opacity">
+          <p class="text-white dark:text-slate-900 text-sm font-bold">All Items</p>
+        </button>
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark px-4 hover:bg-slate-50 dark:hover:bg-border-dark transition-colors">
+          <p class="text-slate-600 dark:text-slate-300 text-sm font-medium">Frequent</p>
+        </button>
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark px-4 hover:bg-slate-50 dark:hover:bg-border-dark transition-colors">
+          <p class="text-slate-600 dark:text-slate-300 text-sm font-medium">Recent</p>
+        </button>
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark px-4 hover:bg-slate-50 dark:hover:bg-border-dark transition-colors">
+          <p class="text-slate-600 dark:text-slate-300 text-sm font-medium">Produce</p>
+        </button>
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark px-4 hover:bg-slate-50 dark:hover:bg-border-dark transition-colors">
+          <p class="text-slate-600 dark:text-slate-300 text-sm font-medium">Dairy</p>
+        </button>
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark px-4 hover:bg-slate-50 dark:hover:bg-border-dark transition-colors">
+          <p class="text-slate-600 dark:text-slate-300 text-sm font-medium">Pantry</p>
+        </button>
+      </div>
+      <!-- Produce Section -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-green-500">nutrition</span>
+            Produce
+          </h3>
+          <span class="text-xs font-medium text-slate-500 bg-slate-100 dark:bg-border-dark px-2 py-1 rounded">3 items</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Item Card 1 -->
+          <div class="group bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 dark:hover:border-primary/50 transition-colors shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="size-12 rounded-lg bg-slate-50 dark:bg-black/20 overflow-hidden flex-shrink-0">
+                <img class="w-full h-full object-cover" data-alt="Fresh red apples" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABvUiKFNMKlGF5fxvkAULT_dA_6JpMo4UXHuU3b5897lAOnb0_f-pFMX7_Sqmp1C-W61_1v0q46lzIVswY1oeBewtGuw29AyJcd2hGtw-v72nW3flRRn_6Xyh-U9VU9db2vGquG8DiSXa0rGsvPiCXoz1msrFKevnN6f1yk8ZVwrzYR_rMlPLpU-rv3vfW4fXGnxpFHulHfUt9FSuaJaQxc8lQ1dhuQI_SaZoS54h426hI2dJuZa6O6bui8iqncwxDCS7aif8HVU_A"/>
+              </div>
+              <div>
+                <h4 class="font-semibold text-slate-900 dark:text-white">Gala Apples</h4>
+
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center bg-slate-100 dark:bg-black/40 rounded-lg p-1">
+                <button class="size-6 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded hover:bg-white dark:hover:bg-surface-dark transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">remove</span>
+                </button>
+                <span class="w-8 text-center text-sm font-bold">2</span>
+                <button class="size-6 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded hover:bg-white dark:hover:bg-surface-dark transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">add</span>
+                </button>
+              </div>
+              <button class="size-9 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20">
+                <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+              </button>
+            </div>
+          </div>
+          <!-- Item Card 2 -->
+          <div class="group bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 dark:hover:border-primary/50 transition-colors shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="size-12 rounded-lg bg-slate-50 dark:bg-black/20 overflow-hidden flex-shrink-0">
+                <img class="w-full h-full object-cover" data-alt="Fresh organic bananas" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD42D9NmQgPFmJu67a-kTsetI8guNmC93fmfC-qsmR6zMwnSDCJIAJW6VTIj-OEZ9x6kXsebPMIPUOffWC7eRdDZaydDYXnDpdhbxu4sRbDGBKGCZqJn9mQ7aSQGvTzKh7YJ1iFIsEedKgVCP3sx_D22B2KVPWdJtRTqsTm05HwzO0t-ptJAwLqAfLMnetVHI8JBwDgu8quHrvqIHNqcSuppqfnSca0Vb7BKlSv65wAM4yJtpJ76H3lJGJKmUKGIY3vB4ZAeO9KoCXz"/>
+              </div>
+              <div>
+                <h4 class="font-semibold text-slate-900 dark:text-white">Bananas</h4>
+
+              </div>
+            </div>
+            <button class="h-9 px-4 border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center hover:bg-slate-50 dark:hover:bg-border-dark hover:text-primary dark:hover:text-primary transition-all text-sm font-medium gap-2">
+              <span class="material-symbols-outlined text-[18px]">add</span>
+              Add
+            </button>
+          </div>
+          <!-- Item Card 3 -->
+          <div class="group bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 dark:hover:border-primary/50 transition-colors shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="size-12 rounded-lg bg-slate-50 dark:bg-black/20 overflow-hidden flex-shrink-0">
+                <img class="w-full h-full object-cover" data-alt="Fresh spinach leaves" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhQftGyKWutDEM8FXuHVeHwRN00YxB89fjz9ZrFgGn5WLiO7lEsqBpFfEvaLKTYeyr-sGgloKct03bpub-2irDf5rNsXAugyavTRjf3WMy_pBnLhTFXYfOvEkiIr3Y2baqGR6SFwl7IGif0MltIzgHg_lu50Kbvn0rd3XdqvrHY3f2iz2BAUBBEIWMSdXMpcvnfMEDqy7Dq5J_xuFsbCchMRphUuJ0RVKnn45Oe3eoWUlaOVlRweIWdjY6ph7HpC5Tv5s1tihq1O7j"/>
+              </div>
+              <div>
+                <h4 class="font-semibold text-slate-900 dark:text-white">Spinach</h4>
+
+              </div>
+            </div>
+            <button class="h-9 px-4 border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center hover:bg-slate-50 dark:hover:bg-border-dark hover:text-primary dark:hover:text-primary transition-all text-sm font-medium gap-2">
+              <span class="material-symbols-outlined text-[18px]">add</span>
+              Add
+            </button>
+          </div>
+        </div>
+      </section>
+      <!-- Dairy Section -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-400">water_drop</span>
+            Dairy &amp; Eggs
+          </h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Item Card 4 -->
+          <div class="group bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 dark:hover:border-primary/50 transition-colors shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="size-12 rounded-lg bg-slate-50 dark:bg-black/20 overflow-hidden flex-shrink-0">
+                <img class="w-full h-full object-cover" data-alt="Milk carton" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-JBfnCkrMk2Uk0te4E9McCkOFRjPH9OLVa7JsP5q_cBb2AOj5pNs4PMch-UWsV46CBYkjdXA2XQbnPUeYHc4fxFCfNKMb20b1wJ6bROcEw1g3OrJSTytdC7RWxnThgllecGejllCw86KaIaXfMzIfq_r99P_ScX_kOXYk7_XWM3msWPR7WNZzzh1HIC7JNy8CFCF8vyynMp_zrD0ZUtGE5W1sBKtMY7ALq_nsgSMxy9ciKyH_XjCeBzqxVnZbjnSaCCiPLlG5lFBE"/>
+              </div>
+              <div>
+                <h4 class="font-semibold text-slate-900 dark:text-white">Whole Milk</h4>
+
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center bg-slate-100 dark:bg-black/40 rounded-lg p-1">
+                <button class="size-6 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded hover:bg-white dark:hover:bg-surface-dark transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">remove</span>
+                </button>
+                <span class="w-8 text-center text-sm font-bold">1</span>
+                <button class="size-6 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded hover:bg-white dark:hover:bg-surface-dark transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">add</span>
+                </button>
+              </div>
+              <button class="size-9 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20">
+                <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+              </button>
+            </div>
+          </div>
+          <!-- Item Card 5 -->
+          <div class="group bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 dark:hover:border-primary/50 transition-colors shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="size-12 rounded-lg bg-slate-50 dark:bg-black/20 overflow-hidden flex-shrink-0">
+                <img class="w-full h-full object-cover" data-alt="Eggs carton" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMsk1_SvAzKvJnU5lz5bJy7tTlJ6Aml4dbw-c9r8Yyl-f0WMNhHm1nAyp9L3EptYUu2xhfn9ZZiUdDsBL-C0u-lgMpXg5eiVSrWsKOe5glydlD2Smgkvlb4gMy13AVsNU2iZHm4C13yRrF4nlM_nHM2viM5xoVI5Lmv1sN7IzcXEQmBTYeH7ZIkqhPWTeE50_6UVR-G4gNIc-qY1rwbKgpbriW97EKA9Qn-2wZTtrvsl-nuKrJd_fNxsTYOAcDAbtuhfDl8l-kJn0o"/>
+              </div>
+              <div>
+                <h4 class="font-semibold text-slate-900 dark:text-white">Large Eggs</h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400">12 count</p>
+              </div>
+            </div>
+            <button class="h-9 px-4 border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center hover:bg-slate-50 dark:hover:bg-border-dark hover:text-primary dark:hover:text-primary transition-all text-sm font-medium gap-2">
+              <span class="material-symbols-outlined text-[18px]">add</span>
+              Add
+            </button>
+          </div>
+        </div>
+      </section>
+      <!-- Pantry Section -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-orange-400">soup_kitchen</span>
+            Pantry
+          </h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Item Card 6 -->
+          <div class="group bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 dark:hover:border-primary/50 transition-colors shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="size-12 rounded-lg bg-slate-50 dark:bg-black/20 overflow-hidden flex-shrink-0">
+                <img class="w-full h-full object-cover" data-alt="Raw pasta" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtsAgRGkOOGrMfcExM9AIsUZxx6RPwLdI9Hghp9euz2QXmRqOba-q6NPqaAv0UngjIgOOsgZsuzY6pDK2vYMWbW4rBW-IkZj9EScG14eXkJrA-7EtJHU9AiCZUKnRKpuPeEC4RfiVjzaj76oWU_vElB3vbX2qD45ybkhhY0BcPIBWDyWUotobc3IuoMt2Sz4ySQEFf__63Xo7awS26VaabMPwqIi9Y1-FPCLNi1txtbRN4KcvXJDzbl0niiewDMNOyvgRvJxgk06BJ"/>
+              </div>
+              <div>
+                <h4 class="font-semibold text-slate-900 dark:text-white">Spaghetti</h4>
+
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center bg-slate-100 dark:bg-black/40 rounded-lg p-1">
+                <button class="size-6 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded hover:bg-white dark:hover:bg-surface-dark transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">remove</span>
+                </button>
+                <span class="w-8 text-center text-sm font-bold">4</span>
+                <button class="size-6 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded hover:bg-white dark:hover:bg-surface-dark transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">add</span>
+                </button>
+              </div>
+              <button class="size-9 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20">
+                <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+              </button>
+            </div>
+          </div>
+          <!-- Item Card 7 -->
+          <div class="group bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 dark:hover:border-primary/50 transition-colors shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="size-12 rounded-lg bg-slate-50 dark:bg-black/20 overflow-hidden flex-shrink-0">
+                <img class="w-full h-full object-cover" data-alt="White rice bowl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVoV3lrzayWU-FjPUAR9a0nz3_paSNokR7FpFyVENSe1fMNwkxohkulVfgLT0oTmHilieotoslKajHzjSKGazxdQgCdxJ-73MNOyuttLoQdJ_skMwIGX7pZTyp-5ZPyujb-496UqlveGaSopRXP83i0uOnODEqJ8MZ98b5eRoa7Wqruj5KvotOts_5drCh6LTPssctIGs1dX0P1O2ymFChu1HSwItj2Glhdod0thwrhe6_oXpWLd3BplfEyNwLbVWPCEAP81dazEwZ"/>
+              </div>
+              <div>
+                <h4 class="font-semibold text-slate-900 dark:text-white">Jasmine Rice</h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400">5lb bag</p>
+              </div>
+            </div>
+            <button class="h-9 px-4 border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center hover:bg-slate-50 dark:hover:bg-border-dark hover:text-primary dark:hover:text-primary transition-all text-sm font-medium gap-2">
+              <span class="material-symbols-outlined text-[18px]">add</span>
+              Add
+            </button>
+          </div>
+        </div>
+      </section>
+      <div class="h-12"></div> <!-- Spacing at bottom -->
+    </div>
+  </main>
+  <!-- Right Sidebar (Shopping List) -->
+  <aside class="w-[360px] hidden xl:flex flex-col bg-white dark:bg-surface-dark border-l border-slate-200 dark:border-border-dark shadow-xl z-20 h-full">
+    <div class="p-6 border-b border-slate-200 dark:border-border-dark">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Current Run</h3>
+        <span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded uppercase tracking-wider">Weekly</span>
+      </div>
+      <!-- Progress -->
+      <div class="mt-4">
+        <div class="flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+          <span>Items collected</span>
+          <span>2/4</span>
+        </div>
+        <div class="h-2 w-full bg-slate-100 dark:bg-black rounded-full overflow-hidden">
+          <div class="h-full w-1/2 bg-primary rounded-full"></div>
+        </div>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4 space-y-2">
+      <!-- List Item Checked -->
+      <div class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-background-dark/50 transition-colors group cursor-pointer">
+        <div class="mt-0.5 relative flex items-center justify-center size-5 rounded border bg-primary border-primary">
+          <span class="material-symbols-outlined text-white text-[16px]">check</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-400 line-through decoration-slate-400">Gala Apples</p>
+          <p class="text-xs text-slate-400">2 lbs</p>
+        </div>
+        <button class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
+      </div>
+      <!-- List Item Checked -->
+      <div class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-background-dark/50 transition-colors group cursor-pointer">
+        <div class="mt-0.5 relative flex items-center justify-center size-5 rounded border bg-primary border-primary">
+          <span class="material-symbols-outlined text-white text-[16px]">check</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-400 line-through decoration-slate-400">Whole Milk</p>
+          <p class="text-xs text-slate-400">1 gal</p>
+        </div>
+        <button class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
+      </div>
+      <!-- List Item Unchecked -->
+      <div class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-background-dark/50 transition-colors group cursor-pointer">
+        <div class="mt-0.5 relative flex items-center justify-center size-5 rounded border border-slate-300 dark:border-slate-600 hover:border-primary cursor-pointer">
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-900 dark:text-white">Spaghetti</p>
+          <div class="flex items-center gap-2 mt-1">
+            <p class="text-xs text-slate-500 dark:text-slate-400">4 boxes</p>
+            <span class="size-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
+            <button class="text-[10px] text-primary font-bold hover:underline">Edit</button>
+          </div>
+        </div>
+        <button class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
+      </div>
+      <!-- List Item Unchecked -->
+      <div class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-background-dark/50 transition-colors group cursor-pointer">
+        <div class="mt-0.5 relative flex items-center justify-center size-5 rounded border border-slate-300 dark:border-slate-600 hover:border-primary cursor-pointer">
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-900 dark:text-white">Jasmine Rice</p>
+          <div class="flex items-center gap-2 mt-1">
+            <p class="text-xs text-slate-500 dark:text-slate-400">1 bag</p>
+          </div>
+        </div>
+        <button class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
+      </div>
+    </div>
+    <!-- Sidebar Footer -->
+    <div class="p-6 border-t border-slate-200 dark:border-border-dark bg-slate-50/50 dark:bg-black/20">
+      <div class="flex justify-between items-end mb-4">
+        <div>
+
+        
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <button class="h-10 rounded-lg border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 font-semibold text-sm hover:bg-white dark:hover:bg-border-dark transition-colors">Clear</button>
+         <button class="h-10 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-colors">Add Items</button>
+      </div>
+    </div>
+  </aside>
+  <!-- Mobile Floating Action Button (Cart) - Visible only on smaller screens -->
+  <button class="xl:hidden fixed bottom-6 right-6 size-14 bg-primary text-white rounded-full shadow-xl shadow-blue-500/40 flex items-center justify-center z-50">
+    <span class="material-symbols-outlined">shopping_cart</span>
+    <span class="absolute top-0 right-0 size-5 bg-red-500 rounded-full border-2 border-background-light dark:border-background-dark text-[10px] font-bold flex items-center justify-center">4</span>
+  </button>
+
