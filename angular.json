@@ -76,7 +76,7 @@
         "deploy": {
           "builder": "angular-cli-ghpages:deploy",
           "options": {
-            "baseHref": "https://github.com/jjorge1999/HomeNeeds",
+            "baseHref": "/HomeNeeds/",
             "name": "jjm-inventory",
             "dir": "dist/frontend/browser"
           }
