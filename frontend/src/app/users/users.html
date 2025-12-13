@@ -1,0 +1,249 @@
+<div class="flex-1 flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark relative">
+<!-- Top Header Area -->
+<header class="flex items-center justify-between px-8 py-5 border-b border-border-dark bg-background-dark sticky top-0 z-10">
+    <!-- Breadcrumbs -->
+    <div class="flex flex-col gap-1">
+        <h2 class="text-white text-2xl font-bold leading-tight tracking-tight">User Management</h2>
+    </div>
+    <!-- Header Actions -->
+    <div class="flex items-center gap-4">
+        <button class="size-10 rounded-full bg-surface-dark hover:bg-border-dark flex items-center justify-center text-text-muted hover:text-white transition-colors">
+            <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <button (click)="openAddModal()" class="bg-primary hover:bg-primary-hover text-white h-10 px-5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+            <span class="material-symbols-outlined text-[20px]">add</span>
+            <span>Add New User</span>
+        </button>
+    </div>
+</header>
+
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto p-8">
+    <div class="max-w-[1200px] mx-auto flex flex-col gap-6">
+        <!-- Description -->
+        <p class="text-text-muted text-base max-w-2xl">
+            Manage access and roles for your household members. You can invite new family members, assign tasks, and control permissions.
+        </p>
+        
+        <!-- Toolbar: Search & Filters -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-surface-dark p-4 rounded-xl border border-border-dark">
+            <!-- Search -->
+            <div class="relative w-full sm:max-w-md group">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span class="material-symbols-outlined text-text-muted group-focus-within:text-primary transition-colors">search</span>
+                </div>
+                <input [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" class="block w-full pl-10 pr-3 py-2.5 border border-border-dark rounded-lg leading-5 bg-background-dark text-white placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all" placeholder="Search users by name..." type="text"/>
+            </div>
+            
+            <!-- Filters -->
+            <div class="flex gap-3 w-full sm:w-auto">
+                <div class="relative">
+                     <select [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event)" class="appearance-none bg-background-dark border border-border-dark text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-3 pr-10 py-2.5 cursor-pointer hover:border-slate-600 transition-colors">
+                        <option value="All">All Roles</option>
+                        @for (role of userRoles; track role.value) {
+                            <option [value]="role.value">{{ role.label }}</option>
+                        }
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-muted">
+                        <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                    </div>
+                </div>
+                <div class="relative">
+                    <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" class="appearance-none bg-background-dark border border-border-dark text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-3 pr-10 py-2.5 cursor-pointer hover:border-slate-600 transition-colors">
+                        <option value="All">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="pending">Pending</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="offline">Offline</option>
+                        <option value="away">Away</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-muted">
+                        <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Users Table -->
+        <div class="bg-surface-dark rounded-xl border border-border-dark overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-border-dark bg-surface-dark">
+                            <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">User</th>
+                            <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Role</th>
+                            <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Status</th>
+                            <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Last Active</th>
+                            <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-dark">
+                        @for (user of filteredUsers(); track user.id) {
+                            <tr class="hover:bg-slate-800 transition-colors group">
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <div class="flex items-center gap-4">
+                                        <div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border border-border-dark bg-surface-dark relative overflow-hidden" 
+                                             [style.background-image]="user.avatarUrl ? 'url(' + user.avatarUrl + ')' : ''">
+                                             @if(!user.avatarUrl) {
+                                                 <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-text-muted bg-border-dark">{{ user.name.charAt(0).toUpperCase() }}</div>
+                                             }
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-white text-sm font-semibold">{{ user.name }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border" [class]="getRoleClass(user.role)">
+                                        {{ getRoleLabel(user.role) }}
+                                    </span>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <div class="h-2 w-2 rounded-full" [class]="getStatusColor(user.status)"></div>
+                                        <span [class.text-primary]="user.status === 'pending'" [class.text-white]="user.status !== 'pending'" class="text-sm">
+                                            {{ getStatusLabel(user.status) }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <span class="text-text-muted text-sm">
+                                        {{ user.lastActive ? (user.lastActive | date:'short') : 'Never' }}
+                                    </span>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap text-right">
+                                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button (click)="openLoginModal(user)" class="p-2 text-text-muted hover:text-white hover:bg-border-dark rounded-lg transition-colors" [title]="currentUser()?.id === user.id ? 'Currently Logged In' : 'Switch to User'" [disabled]="currentUser()?.id === user.id">
+                                            <span class="material-symbols-outlined text-[20px]" [class.text-primary]="currentUser()?.id === user.id">login</span>
+                                        </button>
+                                        <button (click)="openEditModal(user)" class="p-2 text-text-muted hover:text-white hover:bg-border-dark rounded-lg transition-colors" title="Edit User">
+                                            <span class="material-symbols-outlined text-[20px]">edit</span>
+                                        </button>
+                                        <button (click)="deleteUser(user)" class="p-2 text-text-muted hover:text-red-400 hover:bg-border-dark rounded-lg transition-colors" title="Delete User">
+                                            <span class="material-symbols-outlined text-[20px]">delete</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        } @empty {
+                             <tr>
+                                <td colspan="5" class="py-12 text-center text-text-muted">
+                                    <span class="material-symbols-outlined text-4xl mb-2 opacity-50">person_off</span>
+                                    <p>No users found matching your criteria.</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            <div class="px-6 py-4 border-t border-border-dark bg-surface-dark flex items-center justify-between">
+                <p class="text-sm text-text-muted">Showing <span class="font-medium text-white">{{ filteredUsers().length }}</span> users</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+@if (showModal) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div class="bg-surface-dark border border-border-dark w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div class="p-6 border-b border-border-dark flex justify-between items-center bg-background-dark">
+                <h3 class="font-bold text-lg text-white">{{ editingUser ? 'Edit User' : 'New User' }}</h3>
+                <button (click)="closeModal()" class="p-1 rounded-full hover:bg-border-dark text-text-muted hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                 <!-- Avatar Upload -->
+                 <div class="flex items-center gap-4 pb-2 border-b border-border-dark">
+                    <div class="relative size-14 rounded-full bg-background-dark border border-border-dark overflow-hidden flex items-center justify-center group cursor-pointer" (click)="fileInput.click()">
+                        @if (formAvatarUrl) {
+                            <img [src]="formAvatarUrl" class="w-full h-full object-cover">
+                        } @else {
+                            <span class="material-symbols-outlined text-text-muted text-2xl">person</span>
+                        }
+                        <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="material-symbols-outlined text-white text-sm">upload</span>
+                        </div>
+                        @if (formAvatarUrl) {
+                            <button (click)="removeAvatar($event)" class="absolute top-0 right-0 bg-red-500 rounded-full p-0.5 text-white z-20 hover:bg-red-600 transition-colors shadow-sm flex items-center justify-center transform translate-x-1/4 -translate-y-1/4" title="Remove Photo">
+                                <span class="material-symbols-outlined text-[10px] font-bold">close</span>
+                            </button>
+                        }
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xs font-semibold uppercase text-text-muted">Profile Photo</span>
+                        <span class="text-xs text-text-muted">Click to upload</span>
+                    </div>
+                    <input #fileInput type="file" class="hidden" (change)="onAvatarSelected($event)" accept="image/*">
+                 </div>
+
+                 <div>
+                    <label class="block text-xs font-semibold uppercase text-text-muted mb-1.5">Full Name</label>
+                    <input [(ngModel)]="formName" type="text" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="e.g. Alex Johnson">
+                 </div>
+                 <div>
+                    <label class="block text-xs font-semibold uppercase text-text-muted mb-1.5">{{ editingUser ? 'New Password (Optional)' : 'Password' }}</label>
+                    <input [(ngModel)]="formPassword" type="password" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" [placeholder]="editingUser ? 'Leave blank to keep current' : 'Enter password'">
+                 </div>
+                 <div>
+                    <label class="block text-xs font-semibold uppercase text-text-muted mb-1.5">Role</label>
+                    <select [(ngModel)]="formRole" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none">
+                        @for (role of userRoles; track role.value) {
+                            <option [value]="role.value">{{ role.label }}</option>
+                        }
+                    </select>
+                 </div>
+                 @if (editingUser) {
+                     <div>
+                        <label class="block text-xs font-semibold uppercase text-text-muted mb-1.5">Status</label>
+                        <select [(ngModel)]="formStatus" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="pending">Pending</option>
+                            <option value="away">Away</option>
+                            <option value="offline">Offline</option>
+                        </select>
+                     </div>
+                 }
+            </div>
+            <div class="p-4 bg-background-dark border-t border-border-dark flex justify-end gap-3">
+                 <button (click)="closeModal()" class="px-5 py-2.5 rounded-lg border border-border-dark text-text-muted font-bold text-sm hover:text-white hover:border-white transition-colors">Cancel</button>
+                 <button (click)="saveUser()" class="px-5 py-2.5 rounded-lg bg-primary text-white font-bold text-sm hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20">Save User</button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Login Modal -->
+@if (showLoginModal) {
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+    <div class="bg-surface-dark border border-border-dark w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div class="p-6 border-b border-border-dark flex justify-between items-center bg-background-dark">
+            <h3 class="font-bold text-lg text-white">Login as {{ loginTargetUser?.name }}</h3>
+            <button (click)="closeLoginModal()" class="p-1 rounded-full hover:bg-border-dark text-text-muted hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div class="flex justify-center mb-4">
+                <div class="relative size-20 rounded-full border-2 border-border-dark overflow-hidden">
+                    <img [src]="loginTargetUser?.avatarUrl || 'https://ui-avatars.com/api/?name=' + loginTargetUser?.name + '&background=random'" class="w-full h-full object-cover">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-text-muted mb-1.5">Password</label>
+                <input [(ngModel)]="loginPasswordInput" (keyup.enter)="attemptLogin()" type="password" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Enter password" autofocus>
+                @if (loginError) {
+                    <p class="text-red-400 text-xs mt-1">{{ loginError }}</p>
+                }
+            </div>
+        </div>
+        <div class="p-4 bg-background-dark border-t border-border-dark flex justify-end gap-3">
+             <button (click)="closeLoginModal()" class="px-5 py-2.5 rounded-lg border border-border-dark text-text-muted font-bold text-sm hover:text-white hover:border-white transition-colors">Cancel</button>
+             <button (click)="attemptLogin()" class="px-5 py-2.5 rounded-lg bg-primary text-white font-bold text-sm hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20">Login</button>
+        </div>
+    </div>
+</div>
+}

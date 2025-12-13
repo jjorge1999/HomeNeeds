@@ -17,10 +17,14 @@
         <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Groceries</span>
         <span class="ml-auto text-xs font-bold bg-slate-200 dark:bg-border-dark dark:group-hover:bg-slate-600 px-2 py-1 rounded-full min-w-[24px] text-center">8</span>
       </a>
-      <a id="nav-settings" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group" href="#">
-        <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">settings</span>
-        <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Settings</span>
+      <a id="nav-users" routerLink="/users" routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group">
+        <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">group</span>
+        <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Users</span>
       </a>
+      <button id="nav-logout" (click)="logout()" class="flex w-full items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group text-left mt-auto">
+        <span class="material-symbols-outlined group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">logout</span>
+        <span class="font-medium text-sm group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">Log Out</span>
+      </button>
     </nav>
   </div>
   <div class="flex flex-col gap-4 mt-8">
@@ -33,10 +37,10 @@
       <p class="text-xs text-text-muted font-medium">Items Pending</p>
     </div>
     <div id="user-profile" class="flex items-center gap-3 p-4 rounded-full bg-surface-dark cursor-pointer hover:bg-border-dark transition-colors">
-      <img alt="User avatar" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCafQa1ZU_I0ZwGgwCGyMoJtBppJjLzqhlpWO7eF8_-ECq1C0oDP8p_x1_AF0Yb1ALek4TtZGVva8G2auDRBiZ5Xk7AyW_i5kQS47PAmVCp6jHPQtvQY8-a-swXqRzPBDL6y7CdFA0fcb6_Ycy2moQ7lERcs4GKTiGdTC2wELb2oFHPbhPl76vQUDtcgMS9Lq0caoKzc36zBBq8ttCEnRMP6XF1mn9LJU53THRtQdowz1jIZpBOvgks3f4F8kRXW7Y5viukzKfx3-L6"/>
+      <img alt="User avatar" class="w-8 h-8 rounded-full object-cover" [src]="currentUser()?.avatarUrl || 'https://ui-avatars.com/api/?name=Guest&background=random'"/>
       <div class="flex flex-col">
-        <span class="text-sm font-bold text-white leading-none">Alex Morgan</span>
-        <span class="text-[10px] text-text-muted">Pro Member</span>
+        <span class="text-sm font-bold text-white leading-none">{{ currentUser()?.name || 'Guest' }}</span>
+        <span class="text-[10px] text-text-muted capitalize">{{ currentUser()?.role || 'Visitor' }}</span>
       </div>
       <span class="material-symbols-outlined text-text-muted ml-auto text-sm">expand_more</span>
     </div>
@@ -46,3 +50,55 @@
   <router-outlet></router-outlet>
 </div>
 <app-dialog></app-dialog>
+
+<!-- Global Login Overlay -->
+@if (!currentUser() && !loading()) {
+<div class="fixed inset-0 z-[100] bg-[#111317] flex items-center justify-center p-4">
+    <div class="max-w-4xl w-full flex flex-col items-center gap-12 animate-in fade-in zoom-in duration-300">
+        <div class="text-center space-y-2">
+           <h1 class="text-4xl font-bold text-white tracking-tight">Welcome Back</h1>
+           <p class="text-[#9ea7b7] text-lg">Who is using HomeNeeds?</p>
+        </div>
+
+        @if (loginStep() === 'select') {
+        <!-- User Grid -->
+        <div class="flex flex-wrap justify-center gap-8">
+            @for (user of users(); track user.id) {
+                <button (click)="selectUser(user)" class="group flex flex-col items-center gap-4 transition-transform hover:scale-105 outline-none focus:scale-105">
+                    <div class="size-24 rounded-full border-2 border-[#292e38] group-hover:border-[#2060df] overflow-hidden transition-colors relative">
+                        <img [src]="user.avatarUrl || 'https://ui-avatars.com/api/?name=' + user.name + '&background=random'" class="w-full h-full object-cover">
+                        @if (user.password) {
+                             <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span class="material-symbols-outlined text-white">lock</span>
+                             </div>
+                        }
+                    </div>
+                    <span class="text-lg font-medium text-[#9ea7b7] group-hover:text-white transition-colors">{{ user.name }}</span>
+                </button>
+            }
+        </div>
+        } @else {
+        <!-- Password Prompt -->
+        <div class="bg-[#1a202e] border border-[#292e38] rounded-2xl p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+             <div class="flex flex-col items-center gap-4 mb-6">
+                 <div class="size-16 rounded-full border border-[#292e38] overflow-hidden">
+                     <img [src]="selectedUser()?.avatarUrl || 'https://ui-avatars.com/api/?name=' + selectedUser()?.name + '&background=random'" class="w-full h-full object-cover">
+                 </div>
+                 <h3 class="text-white font-bold text-xl">{{ selectedUser()?.name }}</h3>
+             </div>
+             
+             <div class="space-y-4">
+                 <div>
+                    <input [value]="passwordInput()" (input)="passwordInput.set($any($event.target).value)" (keyup.enter)="verifyLogin()" type="password" class="w-full bg-[#111317] border border-[#292e38] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#2060df] focus:ring-1 focus:ring-[#2060df] transition-all text-center placeholder-[#586173]" placeholder="Enter Password" autofocus>
+                    @if (loginError()) {
+                        <p class="text-red-400 text-xs mt-2 text-center">{{ loginError() }}</p>
+                    }
+                 </div>
+                 <button (click)="verifyLogin()" class="w-full py-3 rounded-lg bg-[#2060df] text-white font-bold hover:bg-[#2060df]/90 transition-colors">Login</button>
+                 <button (click)="cancelPassword()" class="w-full py-3 rounded-lg border border-[#3b4250] text-[#9ea7b7] font-bold hover:text-white hover:border-white transition-colors">Back</button>
+             </div>
+        </div>
+        }
+    </div>
+</div>
+}
