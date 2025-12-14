@@ -233,8 +233,13 @@ export class GroceriesComponent {
           isInCart: false,
           isChecked: false,
         })
-        .subscribe(() => {
-          this.newItemName = '';
+        .subscribe({
+          next: () => {
+            this.newItemName = '';
+          },
+          error: (err) => {
+            this.dialogService.alert$(err.message).subscribe();
+          },
         });
     }
   }
@@ -248,7 +253,11 @@ export class GroceriesComponent {
           isInCart: false,
           isChecked: false,
         })
-        .subscribe();
+        .subscribe({
+          error: (err) => {
+            this.dialogService.alert$(err.message).subscribe();
+          },
+        });
     }
   }
 
@@ -289,7 +298,10 @@ export class GroceriesComponent {
               this.loadingService.hide();
               this.cancelEdit();
             },
-            error: () => this.loadingService.hide(),
+            error: (err) => {
+              this.loadingService.hide();
+              this.dialogService.alert$(err.message).subscribe();
+            },
           });
       } else {
         this.groceryService
@@ -311,7 +323,10 @@ export class GroceriesComponent {
               this.loadingService.hide();
               this.cancelEdit();
             },
-            error: () => this.loadingService.hide(),
+            error: (err) => {
+              this.loadingService.hide();
+              this.dialogService.alert$(err.message).subscribe();
+            },
           });
       }
     }

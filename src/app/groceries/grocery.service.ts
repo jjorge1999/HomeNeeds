@@ -407,7 +407,24 @@ export class GroceryService implements OnDestroy {
   }
 
   /**
+   * Check if an item with the same name already exists (case-insensitive)
+   */
+  itemExists(name: string): boolean {
+    const normalizedName = name.trim().toLowerCase();
+    return this.groceriesSignal().some((item) => item.name.toLowerCase() === normalizedName);
+  }
+
+  /**
+   * Get existing item by name (case-insensitive)
+   */
+  getItemByName(name: string): GroceryItem | undefined {
+    const normalizedName = name.trim().toLowerCase();
+    return this.groceriesSignal().find((item) => item.name.toLowerCase() === normalizedName);
+  }
+
+  /**
    * Create grocery item - Observable based
+   * Includes duplicate validation to prevent items with the same name
    */
   create$(
     item: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
@@ -415,6 +432,12 @@ export class GroceryService implements OnDestroy {
     const userId = this.getCurrentUserId();
     if (!userId) {
       return throwError(() => new Error('User must be logged in to create items'));
+    }
+
+    // Check for duplicate item (case-insensitive)
+    const existingItem = this.getItemByName(item.name);
+    if (existingItem) {
+      return throwError(() => new Error(`An item named "${existingItem.name}" already exists.`));
     }
 
     const newItem: GroceryItem = {
@@ -431,6 +454,7 @@ export class GroceryService implements OnDestroy {
 
   /**
    * Legacy Promise-based create
+   * Includes duplicate validation to prevent items with the same name
    * @deprecated Use create$() with subscribe() instead
    */
   async create(
@@ -438,6 +462,12 @@ export class GroceryService implements OnDestroy {
   ): Promise<GroceryItem> {
     const userId = this.getCurrentUserId();
     if (!userId) throw new Error('User must be logged in to create items');
+
+    // Check for duplicate item (case-insensitive)
+    const existingItem = this.getItemByName(item.name);
+    if (existingItem) {
+      throw new Error(`An item named "${existingItem.name}" already exists.`);
+    }
 
     const newItem: GroceryItem = {
       ...item,
@@ -454,6 +484,7 @@ export class GroceryService implements OnDestroy {
 
   /**
    * Update grocery item - Observable based
+   * Includes duplicate validation when renaming items
    */
   update$(
     id: string,
@@ -461,6 +492,17 @@ export class GroceryService implements OnDestroy {
   ): Observable<GroceryItem | undefined> {
     const item = this.groceriesSignal().find((i) => i.id === id);
     if (!item) return of(undefined);
+
+    // Check for duplicate name if name is being updated
+    if (updates.name) {
+      const normalizedNewName = updates.name.trim().toLowerCase();
+      const existingItem = this.groceriesSignal().find(
+        (i) => i.id !== id && i.name.toLowerCase() === normalizedNewName
+      );
+      if (existingItem) {
+        return throwError(() => new Error(`An item named "${existingItem.name}" already exists.`));
+      }
+    }
 
     const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, id);
     return from(
@@ -473,6 +515,7 @@ export class GroceryService implements OnDestroy {
 
   /**
    * Legacy Promise-based update
+   * Includes duplicate validation when renaming items
    * @deprecated Use update$() with subscribe() instead
    */
   async update(
@@ -481,6 +524,17 @@ export class GroceryService implements OnDestroy {
   ): Promise<GroceryItem | undefined> {
     const item = this.groceriesSignal().find((i) => i.id === id);
     if (!item) return undefined;
+
+    // Check for duplicate name if name is being updated
+    if (updates.name) {
+      const normalizedNewName = updates.name.trim().toLowerCase();
+      const existingItem = this.groceriesSignal().find(
+        (i) => i.id !== id && i.name.toLowerCase() === normalizedNewName
+      );
+      if (existingItem) {
+        throw new Error(`An item named "${existingItem.name}" already exists.`);
+      }
+    }
 
     const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, id);
     await updateDoc(docRef, {
