@@ -1,13 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LoadingService } from './loading.service';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { LoadingService, LoadingState } from './loading.service';
 
 @Component({
   selector: 'app-loading',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (loadingService.loading().isLoading) {
+    @if (isLoading()) {
     <div class="loading-overlay">
       <div class="loading-container">
         <!-- Spinner -->
@@ -19,16 +21,16 @@ import { LoadingService } from './loading.service';
         </div>
 
         <!-- Message -->
-        @if (loadingService.loading().message) {
-        <p class="loading-message">{{ loadingService.loading().message }}</p>
+        @if (message()) {
+        <p class="loading-message">{{ message() }}</p>
         }
 
         <!-- Progress Bar (if progress is set) -->
-        @if (loadingService.loading().progress !== undefined) {
+        @if (progress() !== undefined) {
         <div class="progress-container">
-          <div class="progress-bar" [style.width.%]="loadingService.loading().progress"></div>
+          <div class="progress-bar" [style.width.%]="progress()"></div>
         </div>
-        <p class="progress-text">{{ loadingService.loading().progress }}%</p>
+        <p class="progress-text">{{ progress() }}%</p>
         }
       </div>
     </div>
@@ -157,5 +159,15 @@ import { LoadingService } from './loading.service';
   ],
 })
 export class LoadingComponent {
-  loadingService = inject(LoadingService);
+  private loadingService = inject(LoadingService);
+
+  // Convert Observable to signal for proper change detection
+  private loadingState = toSignal(this.loadingService.loading$, {
+    initialValue: { isLoading: false } as LoadingState,
+  });
+
+  // Computed signals for template
+  isLoading = computed(() => this.loadingState().isLoading);
+  message = computed(() => this.loadingState().message);
+  progress = computed(() => this.loadingState().progress);
 }
