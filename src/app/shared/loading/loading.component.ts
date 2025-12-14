@@ -8,7 +8,7 @@ import { LoadingService } from './loading.service';
   imports: [CommonModule],
   template: `
     @if (loadingService.loading().isLoading) {
-    <div class="loading-overlay" @fadeInOut>
+    <div class="loading-overlay">
       <div class="loading-container">
         <!-- Spinner -->
         <div class="spinner">

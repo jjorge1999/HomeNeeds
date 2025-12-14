@@ -99,9 +99,7 @@
         }
       </button>
     </nav>
-  </div>
-
-  <!-- Bottom Section (Stats & User Profile) -->
+      <!-- Bottom Section (Stats & User Profile) -->
   <div class="flex flex-col gap-4 mt-8">
     @if (!sidebarCollapsed()) {
       <!-- Stats Card - Only show when expanded -->
@@ -120,6 +118,7 @@
         <span class="text-lg font-bold text-white">{{ pendingItemsCount() }}</span>
       </div>
     }
+  </div>
   </div>
 </aside>
 <div class="flex-1 h-screen flex flex-col overflow-hidden">
