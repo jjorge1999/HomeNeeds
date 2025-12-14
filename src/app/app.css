@@ -75,6 +75,7 @@
 /* Toggle button animation */
 #sidebar-toggle {
   transition: transform 0.3s ease, box-shadow 0.2s ease;
+  z-index: 100;
 }
 
 #sidebar-toggle:hover {

@@ -44,6 +44,7 @@ export class GroceryService implements OnDestroy {
   private isLoadingSignal = signal<boolean>(true);
   private errorSignal = signal<string | null>(null);
   private isSeededSignal = signal<boolean>(false);
+  private hasMigratedThisSession = false; // Prevent multiple migrations per session
 
   // Get all categories
   readonly categories = computed(() => this.categoriesSignal());
@@ -136,12 +137,13 @@ export class GroceryService implements OnDestroy {
     effect(() => {
       const currentUser = this.userService.currentUser();
       this.cleanupSubscriptions();
+      this.hasMigratedThisSession = false; // Reset migration flag on user change
 
       // Only load data if user is logged in AND has a valid userId
       if (currentUser && currentUser.userId) {
         console.log('📦 Loading groceries for user:', currentUser.userId);
         this.initializeFirestoreListeners(currentUser.userId);
-        this.checkAndMigrateData(currentUser.userId);
+        // Migration is now triggered inside initializeFirestoreListeners after data loads
       } else {
         // Clear data when no user is logged in - DO NOT query Firestore
         console.log('🔒 No user logged in - clearing grocery data');
@@ -203,6 +205,9 @@ export class GroceryService implements OnDestroy {
         // Seed data if empty for this user
         if (groceries.length === 0 && !this.isSeededSignal()) {
           this.seedInitialData(userId);
+        } else {
+          // Check for migration AFTER data is loaded
+          this.checkAndMigrateData(userId, groceries);
         }
       },
       (error) => {
@@ -493,23 +498,29 @@ export class GroceryService implements OnDestroy {
     return `cat_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
   }
 
-  private checkAndMigrateData(userId: string): void {
+  private checkAndMigrateData(userId: string, currentGroceries: GroceryItem[]): void {
+    // Prevent multiple migrations in the same session
+    if (this.hasMigratedThisSession) return;
+
     // Check for seed data updates - now per user
-    const SEED_VERSION = 'v14'; // Added cleaning items
+    const SEED_VERSION = 'v15'; // Fixed migration timing for cleaning items
     const storedVersion = localStorage.getItem(`homeneeds_seed_version_${userId}`);
 
     if (storedVersion !== SEED_VERSION) {
       console.log(`Migrating data to ${SEED_VERSION} for user ${userId}...`);
-      // Use non-destructive migration
-      this.migrateMissingSeedData().then(() => {
+      this.hasMigratedThisSession = true;
+      // Use non-destructive migration with the already-loaded groceries
+      this.migrateMissingSeedData(currentGroceries).then(() => {
         localStorage.setItem(`homeneeds_seed_version_${userId}`, SEED_VERSION);
       });
     }
   }
 
-  async migrateMissingSeedData(): Promise<void> {
+  async migrateMissingSeedData(currentItems?: GroceryItem[]): Promise<void> {
     console.log('Checking for missing seed items...');
-    const currentItems = this.groceriesSignal();
+    // Use passed items or fall back to signal if called manually
+    const items = currentItems ?? this.groceriesSignal();
+    console.log(`Current items count: ${items.length}`);
 
     const allSeedData = [
       ...PRODUCE_SEED_DATA,
@@ -518,15 +529,19 @@ export class GroceryService implements OnDestroy {
       ...BABY_SEED_DATA,
       ...CLEANING_SEED_DATA,
     ];
+    console.log(`Total seed data count: ${allSeedData.length}`);
 
     // Find items that don't exist by name
     const missingItems = allSeedData.filter(
-      (seedItem) => !currentItems.some((existing) => existing.name === seedItem.name)
+      (seedItem) => !items.some((existing) => existing.name === seedItem.name)
     );
 
     if (missingItems.length > 0) {
       console.log(`Adding ${missingItems.length} missing items...`);
+      // Log the items being added for debugging
+      console.log('Missing items:', missingItems.map((i) => i.name).join(', '));
       await Promise.all(missingItems.map((item) => this.create(item)));
+      console.log(`✅ Successfully added ${missingItems.length} items`);
     } else {
       console.log('All seed items are present.');
     }
