@@ -1,5 +1,5 @@
-import { Component, signal, inject, computed } from '@angular/core';
-import { RouterOutlet, RouterLink } from '@angular/router';
+import { Component, signal, inject, computed, effect } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { DialogComponent } from './shared/dialog/dialog.component';
 import { OverviewService } from './overview/overview.service';
 import { UserService } from './users/user.service';
@@ -16,7 +16,7 @@ declare global {
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, DialogComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, DialogComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
   host: {
@@ -32,6 +32,9 @@ export class App {
   users = this.userService.users;
   currentUser = this.userService.currentUser;
   loading = this.userService.loading;
+
+  // Sidebar collapse state with localStorage persistence
+  sidebarCollapsed = signal<boolean>(this.getSavedSidebarState());
 
   // Login Logic
   loginStep = signal<'select' | 'password'>('select');
@@ -52,6 +55,21 @@ export class App {
     console.log('   → window.userService.manualMigrateAllUsers()');
     console.log('   → window.migrationService.migrateAllDataToUser("user_xxx")');
     console.log('   → window.migrationService.previewMigration()');
+
+    // Save sidebar state to localStorage when it changes
+    effect(() => {
+      const collapsed = this.sidebarCollapsed();
+      localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
+    });
+  }
+
+  private getSavedSidebarState(): boolean {
+    const saved = localStorage.getItem('sidebar-collapsed');
+    return saved ? JSON.parse(saved) : false;
+  }
+
+  toggleSidebar(): void {
+    this.sidebarCollapsed.update((val) => !val);
   }
 
   selectUser(user: User) {

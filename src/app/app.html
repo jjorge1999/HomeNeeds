@@ -1,48 +1,123 @@
-<aside id="app-sidebar" class="w-80 h-screen flex-shrink-0 border-r border-slate-200 dark:border-border-dark bg-white dark:bg-background-dark flex flex-col justify-between p-6">
+<aside 
+  id="app-sidebar" 
+  [class]="sidebarCollapsed() ? 'sidebar sidebar-collapsed' : 'sidebar sidebar-expanded'"
+>
+  <!-- Collapse Toggle Button -->
+  <button 
+    id="sidebar-toggle"
+    (click)="toggleSidebar()"
+    class="absolute -right-3 top-6 z-10 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg hover:bg-primary-hover transition-all"
+    [title]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+  >
+    <span class="material-symbols-outlined text-white text-sm" style="font-size: 16px;">
+      {{ sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}
+    </span>
+  </button>
+
   <div>
+    <!-- Logo Section -->
     <div class="flex flex-col mb-8">
       <div class="flex items-center gap-2 mb-1">
         <span class="material-symbols-outlined text-primary" style="font-size: 32px;">checklist</span>
-        <h1 class="text-2xl font-extrabold tracking-tight">HomeNeeds</h1>
+        @if (!sidebarCollapsed()) {
+          <h1 class="text-2xl font-extrabold tracking-tight whitespace-nowrap">HomeNeeds</h1>
+        }
       </div>
-      <p class="text-sm text-slate-500 dark:text-text-muted">Manage your home effortlessly</p>
+      @if (!sidebarCollapsed()) {
+        <p class="text-sm text-slate-500 dark:text-text-muted">Manage your home effortlessly</p>
+      }
     </div>
+
+    <!-- Navigation -->
     <nav id="main-nav" class="flex flex-col gap-2">
-      <a id="nav-overview" routerLink="/overview" routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group">
+      <a 
+        id="nav-overview" 
+        routerLink="/overview" 
+        routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" 
+        [class]="sidebarCollapsed() ? 'nav-item nav-item-collapsed' : 'nav-item'"
+        [title]="sidebarCollapsed() ? 'Overview' : ''"
+      >
         <span class="material-symbols-outlined filled">dashboard</span>
-        <span class="font-bold text-sm">Overview</span>
+        @if (!sidebarCollapsed()) {
+          <span class="font-bold text-sm">Overview</span>
+        }
       </a>
-      <a id="nav-groceries" routerLink="/groceries" routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group">
+      <a 
+        id="nav-groceries" 
+        routerLink="/groceries" 
+        routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" 
+        [class]="sidebarCollapsed() ? 'nav-item nav-item-collapsed' : 'nav-item'"
+        [title]="sidebarCollapsed() ? 'Groceries' : ''"
+      >
         <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">shopping_cart</span>
-        <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Groceries</span>
-        <!-- <span class="ml-auto text-xs font-bold bg-slate-200 dark:bg-border-dark dark:group-hover:bg-slate-600 px-2 py-1 rounded-full min-w-[24px] text-center">8</span> -->
+        @if (!sidebarCollapsed()) {
+          <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Groceries</span>
+        }
       </a>
-      <a id="nav-users" routerLink="/users" routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group">
+      <a 
+        id="nav-users" 
+        routerLink="/users" 
+        routerLinkActive="bg-primary/10 text-primary-hover dark:text-primary" 
+        [class]="sidebarCollapsed() ? 'nav-item nav-item-collapsed' : 'nav-item'"
+        [title]="sidebarCollapsed() ? 'Users' : ''"
+      >
         <span class="material-symbols-outlined group-hover:text-slate-900 dark:group-hover:text-white transition-colors">group</span>
-        <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Users</span>
+        @if (!sidebarCollapsed()) {
+          <span class="font-medium text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Users</span>
+        }
       </a>
-      <button id="nav-logout" (click)="logout()" class="flex w-full items-center gap-3 px-4 py-3 rounded-full hover:bg-slate-100 dark:hover:bg-surface-dark text-slate-600 dark:text-text-muted transition-colors group text-left mt-auto">
+      <button 
+        id="nav-logout" 
+        (click)="logout()" 
+        [class]="sidebarCollapsed() ? 'nav-item nav-item-collapsed text-left mt-auto' : 'nav-item text-left mt-auto'"
+        [title]="sidebarCollapsed() ? 'Log Out' : ''"
+      >
         <span class="material-symbols-outlined group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">logout</span>
-        <span class="font-medium text-sm group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">Log Out</span>
+        @if (!sidebarCollapsed()) {
+          <span class="font-medium text-sm group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">Log Out</span>
+        }
       </button>
     </nav>
   </div>
+
+  <!-- Bottom Section (Stats & User Profile) -->
   <div class="flex flex-col gap-4 mt-8">
-    <div id="stats-card" class="p-5 rounded-2xl bg-surface-dark/40 border border-border-dark backdrop-blur-sm">
-      <div class="flex justify-between items-start mb-2">
-        <span class="material-symbols-outlined text-text-muted">pending_actions</span>
-        <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">Today</span>
+    @if (!sidebarCollapsed()) {
+      <!-- Stats Card - Only show when expanded -->
+      <div id="stats-card" class="p-5 rounded-2xl bg-surface-dark/40 border border-border-dark backdrop-blur-sm">
+        <div class="flex justify-between items-start mb-2">
+          <span class="material-symbols-outlined text-text-muted">pending_actions</span>
+          <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">Today</span>
+        </div>
+        <p class="text-3xl font-black text-white leading-tight mb-1">{{ pendingItemsCount() }}</p>
+        <p class="text-xs text-text-muted font-medium">Items Pending</p>
       </div>
-      <p class="text-3xl font-black text-white leading-tight mb-1">{{ pendingItemsCount() }}</p>
-      <p class="text-xs text-text-muted font-medium">Items Pending</p>
-    </div>
-    <div id="user-profile" class="flex items-center gap-3 p-4 rounded-full bg-surface-dark cursor-pointer hover:bg-border-dark transition-colors">
-      <img alt="User avatar" class="w-8 h-8 rounded-full object-cover" [src]="currentUser()?.avatarUrl || 'https://ui-avatars.com/api/?name=Guest&background=random'"/>
-      <div class="flex flex-col">
-        <span class="text-sm font-bold text-white leading-none">{{ currentUser()?.name || 'Guest' }}</span>
-        <span class="text-[10px] text-text-muted capitalize">{{ currentUser()?.role || 'Visitor' }}</span>
+    } @else {
+      <!-- Collapsed Stats - Just show count -->
+      <div class="flex flex-col items-center p-2 rounded-xl bg-surface-dark/40 border border-border-dark" title="Items Pending">
+        <span class="material-symbols-outlined text-text-muted text-sm">pending_actions</span>
+        <span class="text-lg font-bold text-white">{{ pendingItemsCount() }}</span>
       </div>
-      <span class="material-symbols-outlined text-text-muted ml-auto text-sm">expand_more</span>
+    }
+
+    <!-- User Profile -->
+    <div 
+      id="user-profile" 
+      [class]="sidebarCollapsed() ? 'flex items-center justify-center p-2 rounded-full bg-surface-dark cursor-pointer hover:bg-border-dark transition-colors' : 'flex items-center gap-3 p-4 rounded-full bg-surface-dark cursor-pointer hover:bg-border-dark transition-colors'"
+    >
+      <img 
+        alt="User avatar" 
+        class="w-8 h-8 rounded-full object-cover" 
+        [src]="currentUser()?.avatarUrl || 'https://ui-avatars.com/api/?name=Guest&background=random'"
+        [title]="currentUser()?.name || 'Guest'"
+      />
+      @if (!sidebarCollapsed()) {
+        <div class="flex flex-col">
+          <span class="text-sm font-bold text-white leading-none">{{ currentUser()?.name || 'Guest' }}</span>
+          <span class="text-[10px] text-text-muted capitalize">{{ currentUser()?.role || 'Visitor' }}</span>
+        </div>
+        <span class="material-symbols-outlined text-text-muted ml-auto text-sm">expand_more</span>
+      }
     </div>
   </div>
 </aside>
