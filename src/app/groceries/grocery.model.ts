@@ -59,6 +59,15 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
     createdAt: new Date(),
   },
   {
+    id: 'cleaning',
+    userId: 'system',
+    name: 'Cleaning Items',
+    icon: 'cleaning_services',
+    color: 'text-cyan-500',
+    isDefault: true,
+    createdAt: new Date(),
+  },
+  {
     id: 'other',
     userId: 'system',
     name: 'Other',
@@ -91,6 +100,8 @@ export const CATEGORY_ICONS = [
   'local_pizza',
   'kebab_dining',
   'rice_bowl',
+  'cleaning_services',
+  'child_care',
 ];
 
 // Available colors for category selection

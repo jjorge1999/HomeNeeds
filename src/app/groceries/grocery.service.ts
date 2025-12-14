@@ -20,6 +20,7 @@ import { PRODUCE_SEED_DATA } from './grocery-seed-data';
 import { DAIRY_SEED_DATA } from './dairy-seed-data';
 import { PANTRY_SEED_DATA } from './pantry-seed-data';
 import { BABY_SEED_DATA } from './baby-seed-data';
+import { CLEANING_SEED_DATA } from './cleaning-seed-data';
 import { UserService } from '../users/user.service';
 
 @Injectable({
@@ -266,6 +267,7 @@ export class GroceryService implements OnDestroy {
       ...DAIRY_SEED_DATA,
       ...PANTRY_SEED_DATA,
       ...BABY_SEED_DATA,
+      ...CLEANING_SEED_DATA,
     ];
 
     // Batch create all items with userId
@@ -493,7 +495,7 @@ export class GroceryService implements OnDestroy {
 
   private checkAndMigrateData(userId: string): void {
     // Check for seed data updates - now per user
-    const SEED_VERSION = 'v13'; // Incremented version for user-based data
+    const SEED_VERSION = 'v14'; // Added cleaning items
     const storedVersion = localStorage.getItem(`homeneeds_seed_version_${userId}`);
 
     if (storedVersion !== SEED_VERSION) {
@@ -514,6 +516,7 @@ export class GroceryService implements OnDestroy {
       ...DAIRY_SEED_DATA,
       ...PANTRY_SEED_DATA,
       ...BABY_SEED_DATA,
+      ...CLEANING_SEED_DATA,
     ];
 
     // Find items that don't exist by name
