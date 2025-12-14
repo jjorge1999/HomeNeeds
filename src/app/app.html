@@ -139,7 +139,7 @@
         @if (loginStep() === 'select') {
         <!-- User Grid -->
         <div class="flex flex-wrap justify-center gap-8">
-            @for (user of users(); track user.id) {
+            @for (user of allUsers(); track user.id) {
                 <button (click)="selectUser(user)" class="group flex flex-col items-center gap-4 transition-transform hover:scale-105 outline-none focus:scale-105">
                     <div class="size-24 rounded-full border-2 border-[#292e38] group-hover:border-[#2060df] overflow-hidden transition-colors relative">
                         <img [src]="user.avatarUrl || 'https://ui-avatars.com/api/?name=' + user.name + '&background=random'" class="w-full h-full object-cover">

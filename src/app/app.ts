@@ -32,7 +32,8 @@ export class App {
   private migrationService = inject(DataMigrationService);
   private loadingService = inject(LoadingService);
 
-  users = this.userService.users;
+  users = this.userService.users; // Filtered users for Users page
+  allUsers = this.userService.allUsers; // All users for login screen
   currentUser = this.userService.currentUser;
   loading = this.userService.loading;
 

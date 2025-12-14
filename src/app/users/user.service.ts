@@ -10,6 +10,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
   Unsubscribe,
 } from '@angular/fire/firestore';
@@ -24,9 +25,11 @@ export class UserService {
   private firestore = inject(Firestore);
   private usersCollection = collection(this.firestore, 'users');
   private unsubUsers: Unsubscribe | null = null;
+  private unsubAllUsers: Unsubscribe | null = null;
 
   // Signals for reactive state
-  users = signal<User[]>([]);
+  users = signal<User[]>([]); // Filtered users (created by current user)
+  allUsers = signal<User[]>([]); // All users (for login screen)
   currentUser = signal<User | null>(null);
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
@@ -39,12 +42,43 @@ export class UserService {
   private migrationInProgress = signal<boolean>(false);
 
   constructor() {
+    // Subscribe to ALL users for login screen
+    this.subscribeToAllUsers();
     this.restoreSession();
-    // Subscribe to users when currentUser changes
+    // Subscribe to filtered users when currentUser changes
     effect(() => {
       const user = this.currentUser();
       this.subscribeToUsers(user?.userId);
     });
+  }
+
+  /**
+   * Subscribe to ALL users - used for login screen
+   */
+  private subscribeToAllUsers(): void {
+    const q = query(this.usersCollection, orderBy('name'));
+    this.unsubAllUsers = onSnapshot(
+      q,
+      (snapshot) => {
+        const usersData = snapshot.docs.map((d) => {
+          const data = d.data() as any;
+          return {
+            id: d.id,
+            ...data,
+            userId: data.userId || null,
+            lastActive: data.lastActive?.toDate ? data.lastActive.toDate() : data.lastActive,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+          } as User;
+        });
+        this.allUsers.set(usersData);
+
+        // Auto-migrate users without userId
+        this.migrateUsersWithoutUserId(usersData).subscribe();
+      },
+      (err) => {
+        console.error('Error fetching all users', err);
+      }
+    );
   }
 
   private subscribeToUsers(creatorUserId?: string): void {
@@ -146,10 +180,43 @@ export class UserService {
     );
   }
 
-  private restoreSession(): void {
+  private async restoreSession(): Promise<void> {
     const id = localStorage.getItem('currentUserId');
-    if (id && this.users().length > 0) {
-      this.updateCurrentUserReference(this.users());
+    if (!id) {
+      this.loading.set(false);
+      return;
+    }
+
+    try {
+      // Fetch user directly from Firestore
+      const userDoc = await getDoc(doc(this.firestore, 'users', id));
+      if (userDoc.exists()) {
+        const data = userDoc.data() as any;
+        const user: User = {
+          id: userDoc.id,
+          ...data,
+          userId: data.userId || null,
+          lastActive: data.lastActive?.toDate ? data.lastActive.toDate() : data.lastActive,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+        };
+        this.currentUser.set(user);
+
+        // Update status to active
+        if (user.status !== 'active') {
+          this.updateUser$(user.id, {
+            status: 'active',
+            lastActive: serverTimestamp(),
+          }).subscribe();
+        }
+      } else {
+        // User not found, clear session
+        localStorage.removeItem('currentUserId');
+        this.loading.set(false);
+      }
+    } catch (error) {
+      console.error('Error restoring session:', error);
+      localStorage.removeItem('currentUserId');
+      this.loading.set(false);
     }
   }
 
