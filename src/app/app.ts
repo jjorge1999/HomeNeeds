@@ -1,6 +1,7 @@
 import { Component, signal, inject, computed, effect } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { DialogComponent } from './shared/dialog/dialog.component';
+import { LoadingComponent, LoadingService } from './shared/loading';
 import { OverviewService } from './overview/overview.service';
 import { UserService } from './users/user.service';
 import { User } from './users/user.model';
@@ -11,12 +12,13 @@ declare global {
   interface Window {
     userService: UserService;
     migrationService: DataMigrationService;
+    loadingService: LoadingService;
   }
 }
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, DialogComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, DialogComponent, LoadingComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
   host: {
@@ -28,6 +30,7 @@ export class App {
   private overviewService = inject(OverviewService);
   private userService = inject(UserService);
   private migrationService = inject(DataMigrationService);
+  private loadingService = inject(LoadingService);
 
   users = this.userService.users;
   currentUser = this.userService.currentUser;
@@ -50,11 +53,14 @@ export class App {
     // Expose services on window for dev console access
     (window as any).userService = this.userService;
     (window as any).migrationService = this.migrationService;
+    (window as any).loadingService = this.loadingService;
 
     console.log('🔧 Dev Console Tools Available:');
     console.log('   → window.userService.manualMigrateAllUsers()');
     console.log('   → window.migrationService.migrateAllDataToUser("user_xxx")');
     console.log('   → window.migrationService.previewMigration()');
+    console.log('   → window.loadingService.show("Loading...")');
+    console.log('   → window.loadingService.hide()');
 
     // Save sidebar state to localStorage when it changes
     effect(() => {
