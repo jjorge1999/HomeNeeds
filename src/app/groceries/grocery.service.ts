@@ -20,6 +20,16 @@ import { DAIRY_SEED_DATA } from './dairy-seed-data';
 import { PANTRY_SEED_DATA } from './pantry-seed-data';
 import { BABY_SEED_DATA } from './baby-seed-data';
 import { CLEANING_SEED_DATA } from './cleaning-seed-data';
+import { BAKERY_SEED_DATA } from './bakery-seed-data';
+import { BEVERAGES_SEED_DATA } from './beverages-seed-data';
+import { CANNED_SEED_DATA } from './canned-seed-data';
+import { CONDIMENTS_SEED_DATA } from './condiments-seed-data';
+import { DELI_SEED_DATA } from './deli-seed-data';
+import { FROZEN_SEED_DATA } from './frozen-seed-data';
+import { HEALTH_SEED_DATA } from './health-seed-data';
+import { MEAT_SEED_DATA } from './meat-seed-data';
+import { PETS_SEED_DATA } from './pets-seed-data';
+import { SNACKS_SEED_DATA } from './snacks-seed-data';
 import { UserService } from '../users/user.service';
 import { Observable, from, of, BehaviorSubject, throwError, forkJoin } from 'rxjs';
 import { map, tap, catchError, switchMap } from 'rxjs/operators';
@@ -259,6 +269,16 @@ export class GroceryService implements OnDestroy {
       ...PANTRY_SEED_DATA,
       ...BABY_SEED_DATA,
       ...CLEANING_SEED_DATA,
+      ...BAKERY_SEED_DATA,
+      ...BEVERAGES_SEED_DATA,
+      ...CANNED_SEED_DATA,
+      ...CONDIMENTS_SEED_DATA,
+      ...DELI_SEED_DATA,
+      ...FROZEN_SEED_DATA,
+      ...HEALTH_SEED_DATA,
+      ...MEAT_SEED_DATA,
+      ...PETS_SEED_DATA,
+      ...SNACKS_SEED_DATA,
     ];
 
     const creates$ = allSeedData.map((item) => this.create$(item));
@@ -795,7 +815,7 @@ export class GroceryService implements OnDestroy {
   private checkAndMigrateData(userId: string, currentGroceries: GroceryItem[]): void {
     if (this.hasMigratedThisSession) return;
 
-    const SEED_VERSION = 'v15';
+    const SEED_VERSION = 'v17';
     const storedVersion = localStorage.getItem(`homeneeds_seed_version_${userId}`);
 
     if (storedVersion !== SEED_VERSION) {
@@ -821,6 +841,16 @@ export class GroceryService implements OnDestroy {
       ...PANTRY_SEED_DATA,
       ...BABY_SEED_DATA,
       ...CLEANING_SEED_DATA,
+      ...BAKERY_SEED_DATA,
+      ...BEVERAGES_SEED_DATA,
+      ...CANNED_SEED_DATA,
+      ...CONDIMENTS_SEED_DATA,
+      ...DELI_SEED_DATA,
+      ...FROZEN_SEED_DATA,
+      ...HEALTH_SEED_DATA,
+      ...MEAT_SEED_DATA,
+      ...PETS_SEED_DATA,
+      ...SNACKS_SEED_DATA,
     ];
     console.log(`Total seed data count: ${allSeedData.length}`);
 
