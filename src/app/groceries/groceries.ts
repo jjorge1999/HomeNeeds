@@ -462,6 +462,33 @@ export class GroceriesComponent {
       });
   }
 
+  removeDuplicates(): void {
+    const duplicateCount = this.groceryService.findDuplicateIds().length;
+
+    if (duplicateCount === 0) {
+      this.dialogService.alert$('No duplicate items found.').subscribe();
+      return;
+    }
+
+    this.dialogService
+      .confirm$(`Found ${duplicateCount} duplicate item(s). Remove them?`, 'Remove Duplicates')
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.loadingService.show('Removing duplicates...');
+          this.groceryService.removeDuplicates$().subscribe({
+            next: (count) => {
+              this.loadingService.hide();
+              this.dialogService.alert$(`Removed ${count} duplicate item(s).`).subscribe();
+            },
+            error: (err) => {
+              this.loadingService.hide();
+              this.dialogService.alert$(err.message).subscribe();
+            },
+          });
+        }
+      });
+  }
+
   private createOverviewTask(title: string, imageUrl?: string): void {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 3);

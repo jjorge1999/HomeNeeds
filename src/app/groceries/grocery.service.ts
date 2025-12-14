@@ -644,10 +644,66 @@ export class GroceryService implements OnDestroy {
   }
 
   /**
+   * Find duplicate items (case-insensitive) and return the IDs to delete
+   * Keeps the first occurrence (by createdAt date) of each item name
+   */
+  findDuplicateIds(): string[] {
+    const items = this.groceriesSignal();
+    const seen = new Map<string, GroceryItem>();
+    const duplicateIds: string[] = [];
+
+    // Sort by createdAt to ensure we keep the oldest item
+    const sortedItems = [...items].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    for (const item of sortedItems) {
+      const normalizedName = item.name.toLowerCase().trim();
+      if (seen.has(normalizedName)) {
+        // This is a duplicate - mark for deletion
+        duplicateIds.push(item.id);
+      } else {
+        // First occurrence - keep it
+        seen.set(normalizedName, item);
+      }
+    }
+
+    return duplicateIds;
+  }
+
+  /**
+   * Remove duplicate grocery items - Observable based
+   * Keeps the oldest item for each unique name (case-insensitive)
+   */
+  removeDuplicates$(): Observable<number> {
+    const duplicateIds = this.findDuplicateIds();
+
+    if (duplicateIds.length === 0) {
+      console.log('✅ No duplicate items found.');
+      return of(0);
+    }
+
+    console.log(`🗑️ Removing ${duplicateIds.length} duplicate item(s)...`);
+
+    const deletes$ = duplicateIds.map((id) => this.delete$(id));
+    return forkJoin(deletes$).pipe(
+      tap(() => console.log(`✅ Removed ${duplicateIds.length} duplicate items.`)),
+      map(() => duplicateIds.length)
+    );
+  }
+
+  /**
    * Reset to seed data - Observable based
+   * Also removes any duplicate items that may have been created
    */
   resetToSeedData$(): Observable<void> {
     const groceries = this.groceriesSignal();
+
+    if (groceries.length === 0) {
+      this.isSeededSignal.set(false);
+      return of(undefined);
+    }
+
     const deletes$ = groceries.map((item) => this.delete$(item.id));
 
     return forkJoin(deletes$).pipe(

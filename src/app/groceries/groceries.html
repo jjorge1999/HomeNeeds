@@ -10,7 +10,7 @@
     <div class="flex flex-1 justify-end gap-6 items-center">
       <div class="flex gap-2">
         <!-- Sort Dropdown -->
-        <div class="relative">
+        <!-- <div class="relative">
           <button id="btn-sort" (click)="toggleSortDropdown()" class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-slate-100 dark:bg-border-dark text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-[#3b4754] transition-colors">
             <span class="material-symbols-outlined text-[20px]">sort</span>
           </button>
@@ -29,10 +29,13 @@
               }
             </div>
           }
-        </div>
-        <button id="btn-reset" (click)="resetData()" class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-slate-100 dark:bg-border-dark text-slate-900 dark:text-white hover:bg-red-500 hover:text-white transition-colors" title="Reset to seed data">
-          <span class="material-symbols-outlined text-[20px]">restart_alt</span>
+        </div> -->
+        <button id="btn-remove-duplicates" (click)="removeDuplicates()" class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-slate-100 dark:bg-border-dark text-slate-900 dark:text-white hover:bg-amber-500 hover:text-white transition-colors" title="Remove duplicate items">
+          <span class="material-symbols-outlined text-[20px]">delete_sweep</span>
         </button>
+        <!-- <button id="btn-reset" (click)="resetData()" class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-slate-100 dark:bg-border-dark text-slate-900 dark:text-white hover:bg-red-500 hover:text-white transition-colors" title="Reset to seed data">
+          <span class="material-symbols-outlined text-[20px]">restart_alt</span>
+        </button> -->
       </div>
     </div>
   </header>
