@@ -8,12 +8,13 @@ import {
   doc,
   onSnapshot,
   query,
-  orderBy,
   where,
   Unsubscribe,
 } from '@angular/fire/firestore';
 import { Assignee } from './overview.model';
 import { UserService } from '../users/user.service';
+import { Observable, from, of, BehaviorSubject, throwError } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
@@ -25,6 +26,10 @@ export class AssigneeService implements OnDestroy {
 
   private assigneesSignal = signal<Assignee[]>([]);
   readonly assignees = computed(() => this.assigneesSignal());
+
+  // Observable stream for subscribers
+  private assigneesSubject = new BehaviorSubject<Assignee[]>([]);
+  readonly assignees$ = this.assigneesSubject.asObservable();
 
   private unsubAssignees: Unsubscribe | null = null;
 
@@ -42,6 +47,7 @@ export class AssigneeService implements OnDestroy {
         // Clear data when no user is logged in - DO NOT query Firestore
         console.log('🔒 No user logged in - clearing assignee data');
         this.assigneesSignal.set([]);
+        this.assigneesSubject.next([]);
       }
     });
   }
@@ -58,7 +64,7 @@ export class AssigneeService implements OnDestroy {
     }
   }
 
-  private subscribeToAssignees(userId: string) {
+  private subscribeToAssignees(userId: string): void {
     if (!userId) return;
 
     // Query without orderBy to avoid index requirement
@@ -75,6 +81,7 @@ export class AssigneeService implements OnDestroy {
         // Sort client-side by name
         items.sort((a, b) => a.name.localeCompare(b.name));
         this.assigneesSignal.set(items);
+        this.assigneesSubject.next(items);
       },
       (error) => {
         console.error('Error fetching assignees:', error);
@@ -82,7 +89,31 @@ export class AssigneeService implements OnDestroy {
     );
   }
 
-  async createAssignee(name: string, color: string) {
+  /**
+   * Create assignee - Observable based
+   */
+  createAssignee$(name: string, color: string): Observable<string> {
+    const userId = this.getCurrentUserId();
+    if (!userId) {
+      return throwError(() => new Error('User must be logged in to create assignees'));
+    }
+
+    const initial = name.charAt(0).toUpperCase();
+    return from(
+      addDoc(collection(this.firestore, this.COLLECTION), {
+        name,
+        color,
+        initial,
+        userId,
+      })
+    ).pipe(map((docRef) => docRef.id));
+  }
+
+  /**
+   * Legacy Promise-based createAssignee
+   * @deprecated Use createAssignee$() with subscribe() instead
+   */
+  async createAssignee(name: string, color: string): Promise<void> {
     const userId = this.getCurrentUserId();
     if (!userId) throw new Error('User must be logged in to create assignees');
 
@@ -95,7 +126,23 @@ export class AssigneeService implements OnDestroy {
     });
   }
 
-  async updateAssignee(id: string, data: Partial<Omit<Assignee, 'id' | 'userId'>>) {
+  /**
+   * Update assignee - Observable based
+   */
+  updateAssignee$(id: string, data: Partial<Omit<Assignee, 'id' | 'userId'>>): Observable<void> {
+    const updateData = { ...data } as any;
+    if (data.name) {
+      // Update initial if specific name is provided
+      updateData.initial = data.name.charAt(0).toUpperCase();
+    }
+    return from(updateDoc(doc(this.firestore, this.COLLECTION, id), updateData));
+  }
+
+  /**
+   * Legacy Promise-based updateAssignee
+   * @deprecated Use updateAssignee$() with subscribe() instead
+   */
+  async updateAssignee(id: string, data: Partial<Omit<Assignee, 'id' | 'userId'>>): Promise<void> {
     if (data.name) {
       // Update initial if specific name is provided
       (data as any).initial = data.name.charAt(0).toUpperCase();
@@ -103,15 +150,26 @@ export class AssigneeService implements OnDestroy {
     await updateDoc(doc(this.firestore, this.COLLECTION, id), data);
   }
 
-  async deleteAssignee(id: string) {
+  /**
+   * Delete assignee - Observable based
+   */
+  deleteAssignee$(id: string): Observable<void> {
+    return from(deleteDoc(doc(this.firestore, this.COLLECTION, id)));
+  }
+
+  /**
+   * Legacy Promise-based deleteAssignee
+   * @deprecated Use deleteAssignee$() with subscribe() instead
+   */
+  async deleteAssignee(id: string): Promise<void> {
     await deleteDoc(doc(this.firestore, this.COLLECTION, id));
   }
 
-  getAssignee(id: string) {
+  getAssignee(id: string): Assignee | undefined {
     return this.assigneesSignal().find((a) => a.id === id);
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.cleanupSubscription();
   }
 }

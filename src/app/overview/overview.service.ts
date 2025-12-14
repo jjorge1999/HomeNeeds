@@ -8,7 +8,6 @@ import {
   updateDoc,
   onSnapshot,
   query,
-  orderBy,
   where,
   Firestore,
   Unsubscribe,
@@ -17,6 +16,8 @@ import { initializeApp } from 'firebase/app';
 import { environment } from '../../environments/environment';
 import { OverviewTask } from './overview.model';
 import { UserService } from '../users/user.service';
+import { Observable, from, of, BehaviorSubject, throwError } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class OverviewService implements OnDestroy {
@@ -26,6 +27,10 @@ export class OverviewService implements OnDestroy {
 
   private tasksSignal = signal<OverviewTask[]>([]);
   readonly tasks = computed(() => this.tasksSignal());
+
+  // Observable stream for subscribers
+  private tasksSubject = new BehaviorSubject<OverviewTask[]>([]);
+  readonly tasks$ = this.tasksSubject.asObservable();
 
   private unsubTasks: Unsubscribe | null = null;
 
@@ -46,6 +51,7 @@ export class OverviewService implements OnDestroy {
         // Clear data when no user is logged in - DO NOT query Firestore
         console.log('🔒 No user logged in - clearing task data');
         this.tasksSignal.set([]);
+        this.tasksSubject.next([]);
       }
     });
   }
@@ -97,9 +103,34 @@ export class OverviewService implements OnDestroy {
       // Sort client-side by createdAt descending
       items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       this.tasksSignal.set(items);
+      this.tasksSubject.next(items);
     });
   }
 
+  /**
+   * Create task - Observable based
+   */
+  createTask$(task: Omit<OverviewTask, 'id' | 'createdAt' | 'userId'>): Observable<string> {
+    const userId = this.getCurrentUserId();
+    if (!userId) {
+      return throwError(() => new Error('User must be logged in to create tasks'));
+    }
+
+    const id = `task_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    return from(
+      setDoc(doc(this.firestore, this.TASKS_COLLECTION, id), {
+        ...task,
+        id,
+        userId,
+        createdAt: new Date(),
+      })
+    ).pipe(map(() => id));
+  }
+
+  /**
+   * Legacy Promise-based createTask
+   * @deprecated Use createTask$() with subscribe() instead
+   */
   async createTask(task: Omit<OverviewTask, 'id' | 'createdAt' | 'userId'>): Promise<void> {
     const userId = this.getCurrentUserId();
     if (!userId) throw new Error('User must be logged in to create tasks');
@@ -113,6 +144,17 @@ export class OverviewService implements OnDestroy {
     });
   }
 
+  /**
+   * Update task - Observable based
+   */
+  updateTask$(id: string, updates: Partial<Omit<OverviewTask, 'id' | 'userId'>>): Observable<void> {
+    return from(updateDoc(doc(this.firestore, this.TASKS_COLLECTION, id), updates));
+  }
+
+  /**
+   * Legacy Promise-based updateTask
+   * @deprecated Use updateTask$() with subscribe() instead
+   */
   async updateTask(
     id: string,
     updates: Partial<Omit<OverviewTask, 'id' | 'userId'>>
@@ -120,11 +162,22 @@ export class OverviewService implements OnDestroy {
     await updateDoc(doc(this.firestore, this.TASKS_COLLECTION, id), updates);
   }
 
+  /**
+   * Delete task - Observable based
+   */
+  deleteTask$(id: string): Observable<void> {
+    return from(deleteDoc(doc(this.firestore, this.TASKS_COLLECTION, id)));
+  }
+
+  /**
+   * Legacy Promise-based deleteTask
+   * @deprecated Use deleteTask$() with subscribe() instead
+   */
   async deleteTask(id: string): Promise<void> {
     await deleteDoc(doc(this.firestore, this.TASKS_COLLECTION, id));
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.cleanupSubscription();
   }
 }

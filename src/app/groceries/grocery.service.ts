@@ -7,7 +7,6 @@ import {
   deleteDoc,
   updateDoc,
   query,
-  orderBy,
   where,
   onSnapshot,
   Firestore,
@@ -22,6 +21,8 @@ import { PANTRY_SEED_DATA } from './pantry-seed-data';
 import { BABY_SEED_DATA } from './baby-seed-data';
 import { CLEANING_SEED_DATA } from './cleaning-seed-data';
 import { UserService } from '../users/user.service';
+import { Observable, from, of, BehaviorSubject, throwError, forkJoin } from 'rxjs';
+import { map, tap, catchError, switchMap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
@@ -31,6 +32,7 @@ export class GroceryService implements OnDestroy {
   private firestore: Firestore;
   private readonly GROCERIES_COLLECTION = 'groceries';
   private readonly CATEGORIES_COLLECTION = 'categories';
+  private readonly HISTORY_COLLECTION = 'shopping_history';
 
   private unsubGroceries: Unsubscribe | null = null;
   private unsubCategories: Unsubscribe | null = null;
@@ -44,37 +46,35 @@ export class GroceryService implements OnDestroy {
   private isLoadingSignal = signal<boolean>(true);
   private errorSignal = signal<string | null>(null);
   private isSeededSignal = signal<boolean>(false);
-  private hasMigratedThisSession = false; // Prevent multiple migrations per session
+  private hasMigratedThisSession = false;
 
-  // Get all categories
+  // Observable streams for subscribers
+  private groceriesSubject = new BehaviorSubject<GroceryItem[]>([]);
+  private categoriesSubject = new BehaviorSubject<CategoryItem[]>([...DEFAULT_CATEGORIES]);
+  readonly groceries$ = this.groceriesSubject.asObservable();
+  readonly categories$ = this.categoriesSubject.asObservable();
+
+  // Computed signals
   readonly categories = computed(() => this.categoriesSignal());
-
-  // Get category IDs for iteration
   readonly categoryIds = computed(() => this.categoriesSignal().map((c) => c.id));
-
-  // Loading state
   readonly isLoading = computed(() => this.isLoadingSignal());
 
-  // Computed signals for filtered/sorted data
   readonly groceries = computed(() => {
     let items = this.groceriesSignal();
     const queryStr = this.searchQuerySignal().toLowerCase();
     const category = this.selectedCategorySignal();
     const sortBy = this.sortBySignal();
 
-    // Filter by search query
     if (queryStr) {
       items = items.filter((item) => item.name.toLowerCase().includes(queryStr));
     }
 
-    // Filter by category
     if (category === 'cart') {
       items = items.filter((item) => item.isInCart);
     } else if (category !== 'all') {
       items = items.filter((item) => item.category === category);
     }
 
-    // Sort items
     items = [...items].sort((a, b) => {
       switch (sortBy) {
         case 'name':
@@ -92,36 +92,27 @@ export class GroceryService implements OnDestroy {
   });
 
   readonly cartItems = computed(() => this.groceriesSignal().filter((item) => item.isInCart));
-
   readonly checkedItems = computed(() => this.cartItems().filter((item) => item.isChecked));
-
   readonly uncheckedItems = computed(() => this.cartItems().filter((item) => !item.isChecked));
-
   readonly searchQuery = computed(() => this.searchQuerySignal());
   readonly selectedCategory = computed(() => this.selectedCategorySignal());
   readonly sortBy = computed(() => this.sortBySignal());
   readonly error = computed(() => this.errorSignal());
 
-  // Group groceries by category - dynamically based on available categories
   readonly groceriesByCategory = computed(() => {
     const items = this.groceries();
     const categories = this.categoriesSignal();
     const grouped: Record<string, GroceryItem[]> = {};
 
-    // Initialize all categories with empty arrays
     categories.forEach((cat) => {
       grouped[cat.id] = [];
     });
 
-    // Group items
     items.forEach((item) => {
       if (grouped[item.category]) {
         grouped[item.category].push(item);
-      } else {
-        // If category doesn't exist, put in 'other'
-        if (grouped['other']) {
-          grouped['other'].push(item);
-        }
+      } else if (grouped['other']) {
+        grouped['other'].push(item);
       }
     });
 
@@ -129,26 +120,23 @@ export class GroceryService implements OnDestroy {
   });
 
   constructor() {
-    // Explicitly initialize app to ensure it exists
     const app = initializeApp(environment.firebase);
     this.firestore = getFirestore(app);
 
-    // React to user changes - reinitialize listeners when user changes
     effect(() => {
       const currentUser = this.userService.currentUser();
       this.cleanupSubscriptions();
-      this.hasMigratedThisSession = false; // Reset migration flag on user change
+      this.hasMigratedThisSession = false;
 
-      // Only load data if user is logged in AND has a valid userId
       if (currentUser && currentUser.userId) {
         console.log('📦 Loading groceries for user:', currentUser.userId);
         this.initializeFirestoreListeners(currentUser.userId);
-        // Migration is now triggered inside initializeFirestoreListeners after data loads
       } else {
-        // Clear data when no user is logged in - DO NOT query Firestore
         console.log('🔒 No user logged in - clearing grocery data');
         this.groceriesSignal.set([]);
+        this.groceriesSubject.next([]);
         this.categoriesSignal.set([...DEFAULT_CATEGORIES]);
+        this.categoriesSubject.next([...DEFAULT_CATEGORIES]);
         this.isLoadingSignal.set(false);
       }
     });
@@ -172,11 +160,8 @@ export class GroceryService implements OnDestroy {
 
   private initializeFirestoreListeners(userId: string): void {
     if (!userId) return;
-
     this.isLoadingSignal.set(true);
 
-    // Listen to groceries collection - filtered by userId
-    // Note: No orderBy to avoid index requirement - sorting is done in computed signal
     const groceriesRef = query(
       collection(this.firestore, this.GROCERIES_COLLECTION),
       where('userId', '==', userId)
@@ -200,13 +185,12 @@ export class GroceryService implements OnDestroy {
         }) as GroceryItem[];
 
         this.groceriesSignal.set(groceries);
+        this.groceriesSubject.next(groceries);
         this.isLoadingSignal.set(false);
 
-        // Seed data if empty for this user
         if (groceries.length === 0 && !this.isSeededSignal()) {
-          this.seedInitialData(userId);
+          this.seedInitialData$(userId).subscribe();
         } else {
-          // Check for migration AFTER data is loaded
           this.checkAndMigrateData(userId, groceries);
         }
       },
@@ -217,42 +201,42 @@ export class GroceryService implements OnDestroy {
       }
     );
 
-    // Listen to categories collection - both system and user categories
     const categoriesRef = query(
       collection(this.firestore, this.CATEGORIES_COLLECTION),
-      where('userId', 'in', ['system', userId])
+      where('userId', 'in', [userId, 'system'])
     );
 
     this.unsubCategories = onSnapshot(
       categoriesRef,
       (snapshot) => {
-        if (!snapshot.empty) {
-          const categories = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              createdAt: data['createdAt']?.toDate
-                ? data['createdAt'].toDate()
-                : new Date(data['createdAt']),
-            };
-          }) as CategoryItem[];
+        if (snapshot.docs.length > 0) {
+          const categories = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data()['createdAt']?.toDate
+              ? doc.data()['createdAt'].toDate()
+              : new Date(),
+          })) as CategoryItem[];
 
-          // Merge with defaults to ensure all defaults exist
-          const storedIds = categories.map((c) => c.id);
-          const missingDefaults = DEFAULT_CATEGORIES.filter((dc) => !storedIds.includes(dc.id));
+          categories.sort((a, b) => a.name.localeCompare(b.name));
+
+          const missingDefaults = DEFAULT_CATEGORIES.filter(
+            (dc) => !categories.some((c) => c.id === dc.id)
+          );
 
           if (missingDefaults.length > 0) {
-            // Add missing defaults to Firestore
-            missingDefaults.forEach((cat) => this.saveCategoryToFirestore(cat));
-            this.categoriesSignal.set([...categories, ...missingDefaults]);
+            missingDefaults.forEach((cat) => this.saveCategoryToFirestore$(cat).subscribe());
+            const allCategories = [...categories, ...missingDefaults];
+            this.categoriesSignal.set(allCategories);
+            this.categoriesSubject.next(allCategories);
           } else {
             this.categoriesSignal.set(categories);
+            this.categoriesSubject.next(categories);
           }
         } else {
-          // Seed default categories
-          DEFAULT_CATEGORIES.forEach((cat) => this.saveCategoryToFirestore(cat));
+          DEFAULT_CATEGORIES.forEach((cat) => this.saveCategoryToFirestore$(cat).subscribe());
           this.categoriesSignal.set([...DEFAULT_CATEGORIES]);
+          this.categoriesSubject.next([...DEFAULT_CATEGORIES]);
         }
       },
       (error) => {
@@ -261,8 +245,10 @@ export class GroceryService implements OnDestroy {
     );
   }
 
-  private async seedInitialData(userId: string): Promise<void> {
-    if (this.isSeededSignal()) return;
+  // ========== Observable-based Methods ==========
+
+  private seedInitialData$(userId: string): Observable<void> {
+    if (this.isSeededSignal()) return of(undefined);
     this.isSeededSignal.set(true);
 
     console.log('Seeding initial grocery data for user:', userId);
@@ -275,22 +261,49 @@ export class GroceryService implements OnDestroy {
       ...CLEANING_SEED_DATA,
     ];
 
-    // Batch create all items with userId
-    const batchPromises = allSeedData.map((item) => this.create(item));
-    await Promise.all(batchPromises);
-
-    console.log(`Seeded ${allSeedData.length} grocery items for user ${userId}`);
+    const creates$ = allSeedData.map((item) => this.create$(item));
+    return forkJoin(creates$).pipe(
+      tap(() => console.log(`Seeded ${allSeedData.length} grocery items for user ${userId}`)),
+      map(() => undefined)
+    );
   }
 
-  private async saveCategoryToFirestore(category: CategoryItem): Promise<void> {
+  private saveCategoryToFirestore$(category: CategoryItem): Observable<void> {
     const docRef = doc(this.firestore, this.CATEGORIES_COLLECTION, category.id);
-    await setDoc(docRef, {
-      ...category,
-      createdAt: category.createdAt,
-    });
+    return from(
+      setDoc(docRef, {
+        ...category,
+        createdAt: category.createdAt,
+      })
+    );
   }
 
-  // Category CRUD Operations
+  /**
+   * Create category - Observable based
+   */
+  createCategory$(
+    category: Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault' | 'userId'>
+  ): Observable<CategoryItem> {
+    const userId = this.getCurrentUserId();
+    if (!userId) {
+      return throwError(() => new Error('User must be logged in to create categories'));
+    }
+
+    const newCategory: CategoryItem = {
+      ...category,
+      id: this.generateCategoryId(category.name),
+      userId,
+      isDefault: false,
+      createdAt: new Date(),
+    };
+
+    return this.saveCategoryToFirestore$(newCategory).pipe(map(() => newCategory));
+  }
+
+  /**
+   * Legacy Promise-based createCategory
+   * @deprecated Use createCategory$() with subscribe() instead
+   */
   async createCategory(
     category: Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault' | 'userId'>
   ): Promise<CategoryItem> {
@@ -305,7 +318,7 @@ export class GroceryService implements OnDestroy {
       createdAt: new Date(),
     };
 
-    await this.saveCategoryToFirestore(newCategory);
+    await this.saveCategoryToFirestore$(newCategory).toPromise();
     return newCategory;
   }
 
@@ -313,6 +326,24 @@ export class GroceryService implements OnDestroy {
     return this.categoriesSignal().find((cat) => cat.id === id);
   }
 
+  /**
+   * Update category - Observable based
+   */
+  updateCategory$(
+    id: string,
+    updates: Partial<Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault' | 'userId'>>
+  ): Observable<CategoryItem | undefined> {
+    const category = this.getCategory(id);
+    if (!category || category.isDefault) return of(undefined);
+
+    const docRef = doc(this.firestore, this.CATEGORIES_COLLECTION, id);
+    return from(updateDoc(docRef, updates)).pipe(map(() => ({ ...category, ...updates })));
+  }
+
+  /**
+   * Legacy Promise-based updateCategory
+   * @deprecated Use updateCategory$() with subscribe() instead
+   */
   async updateCategory(
     id: string,
     updates: Partial<Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault' | 'userId'>>
@@ -322,7 +353,6 @@ export class GroceryService implements OnDestroy {
 
     const docRef = doc(this.firestore, this.CATEGORIES_COLLECTION, id);
     await updateDoc(docRef, updates);
-
     return { ...category, ...updates };
   }
 
@@ -331,7 +361,6 @@ export class GroceryService implements OnDestroy {
     if (!category) return { success: false, error: 'Category not found' };
     if (category.isDefault) return { success: false, error: 'Cannot delete default categories' };
 
-    // Check if category has related items
     const itemsInCategory = this.groceriesSignal().filter((item) => item.category === id);
     if (itemsInCategory.length > 0) {
       return {
@@ -377,7 +406,33 @@ export class GroceryService implements OnDestroy {
     this.sortBySignal.set(sortBy);
   }
 
-  // CRUD Operations with Firestore - now includes userId
+  /**
+   * Create grocery item - Observable based
+   */
+  create$(
+    item: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  ): Observable<GroceryItem> {
+    const userId = this.getCurrentUserId();
+    if (!userId) {
+      return throwError(() => new Error('User must be logged in to create items'));
+    }
+
+    const newItem: GroceryItem = {
+      ...item,
+      id: this.generateId(),
+      userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, newItem.id);
+    return from(setDoc(docRef, newItem)).pipe(map(() => newItem));
+  }
+
+  /**
+   * Legacy Promise-based create
+   * @deprecated Use create$() with subscribe() instead
+   */
   async create(
     item: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
   ): Promise<GroceryItem> {
@@ -394,10 +449,32 @@ export class GroceryService implements OnDestroy {
 
     const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, newItem.id);
     await setDoc(docRef, newItem);
-
     return newItem;
   }
 
+  /**
+   * Update grocery item - Observable based
+   */
+  update$(
+    id: string,
+    updates: Partial<Omit<GroceryItem, 'id' | 'createdAt' | 'userId'>>
+  ): Observable<GroceryItem | undefined> {
+    const item = this.groceriesSignal().find((i) => i.id === id);
+    if (!item) return of(undefined);
+
+    const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, id);
+    return from(
+      updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date(),
+      })
+    ).pipe(map(() => ({ ...item, ...updates, updatedAt: new Date() })));
+  }
+
+  /**
+   * Legacy Promise-based update
+   * @deprecated Use update$() with subscribe() instead
+   */
   async update(
     id: string,
     updates: Partial<Omit<GroceryItem, 'id' | 'createdAt' | 'userId'>>
@@ -410,10 +487,21 @@ export class GroceryService implements OnDestroy {
       ...updates,
       updatedAt: new Date(),
     });
-
     return { ...item, ...updates, updatedAt: new Date() };
   }
 
+  /**
+   * Delete grocery item - Observable based
+   */
+  delete$(id: string): Observable<boolean> {
+    const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, id);
+    return from(deleteDoc(docRef)).pipe(map(() => true));
+  }
+
+  /**
+   * Legacy Promise-based delete
+   * @deprecated Use delete$() with subscribe() instead
+   */
   async delete(id: string): Promise<boolean> {
     const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, id);
     await deleteDoc(docRef);
@@ -424,15 +512,51 @@ export class GroceryService implements OnDestroy {
     return this.groceriesSignal().find((item) => item.id === id);
   }
 
-  // Cart Operations
+  /**
+   * Add to cart - Observable based
+   */
+  addToCart$(id: string): Observable<void> {
+    return this.update$(id, { isInCart: true }).pipe(map(() => undefined));
+  }
+
+  /**
+   * Legacy Promise-based addToCart
+   * @deprecated Use addToCart$() with subscribe() instead
+   */
   async addToCart(id: string): Promise<void> {
     await this.update(id, { isInCart: true });
   }
 
+  /**
+   * Remove from cart - Observable based
+   */
+  removeFromCart$(id: string): Observable<void> {
+    return this.update$(id, { isInCart: false, isChecked: false }).pipe(map(() => undefined));
+  }
+
+  /**
+   * Legacy Promise-based removeFromCart
+   * @deprecated Use removeFromCart$() with subscribe() instead
+   */
   async removeFromCart(id: string): Promise<void> {
     await this.update(id, { isInCart: false, isChecked: false });
   }
 
+  /**
+   * Toggle checked - Observable based
+   */
+  toggleChecked$(id: string): Observable<void> {
+    const item = this.getById(id);
+    if (item) {
+      return this.update$(id, { isChecked: !item.isChecked }).pipe(map(() => undefined));
+    }
+    return of(undefined);
+  }
+
+  /**
+   * Legacy Promise-based toggleChecked
+   * @deprecated Use toggleChecked$() with subscribe() instead
+   */
   async toggleChecked(id: string): Promise<void> {
     const item = this.getById(id);
     if (item) {
@@ -440,29 +564,89 @@ export class GroceryService implements OnDestroy {
     }
   }
 
+  /**
+   * Clear cart - Observable based
+   */
+  clearCart$(): Observable<void> {
+    const cartItems = this.cartItems();
+    if (cartItems.length === 0) return of(undefined);
+
+    const updates$ = cartItems.map((item) =>
+      this.update$(item.id, { isInCart: false, isChecked: false })
+    );
+    return forkJoin(updates$).pipe(map(() => undefined));
+  }
+
+  /**
+   * Legacy Promise-based clearCart
+   * @deprecated Use clearCart$() with subscribe() instead
+   */
   async clearCart(): Promise<void> {
     const cartItems = this.cartItems();
-    // Use Promise.all for parallel update
     const updates = cartItems.map((item) =>
       this.update(item.id, { isInCart: false, isChecked: false })
     );
     await Promise.all(updates);
   }
 
-  // Reset to seed data
-  async resetToSeedData(): Promise<void> {
-    // Delete all existing groceries using batch deletion approach (though here we loop for simplicity)
+  /**
+   * Reset to seed data - Observable based
+   */
+  resetToSeedData$(): Observable<void> {
     const groceries = this.groceriesSignal();
-    // Delete in parallel
+    const deletes$ = groceries.map((item) => this.delete$(item.id));
+
+    return forkJoin(deletes$).pipe(
+      tap(() => this.isSeededSignal.set(false)),
+      map(() => undefined)
+    );
+  }
+
+  /**
+   * Legacy Promise-based resetToSeedData
+   * @deprecated Use resetToSeedData$() with subscribe() instead
+   */
+  async resetToSeedData(): Promise<void> {
+    const groceries = this.groceriesSignal();
     const deletePromises = groceries.map((item) => this.delete(item.id));
     await Promise.all(deletePromises);
-
-    // Reset seeded flag and let the listener re-seed
     this.isSeededSignal.set(false);
   }
 
-  private readonly HISTORY_COLLECTION = 'shopping_history';
+  /**
+   * Save to history - Observable based
+   */
+  saveToHistory$(): Observable<void> {
+    const userId = this.getCurrentUserId();
+    if (!userId) return of(undefined);
 
+    const items = this.cartItems();
+    if (items.length === 0) return of(undefined);
+
+    const historyId = `history_${Date.now()}`;
+    const docRef = doc(this.firestore, this.HISTORY_COLLECTION, historyId);
+
+    const historyData = {
+      id: historyId,
+      userId,
+      date: new Date(),
+      itemCount: items.length,
+      items: items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        category: i.category,
+        checked: i.isChecked,
+      })),
+      completed: true,
+    };
+
+    return from(setDoc(docRef, historyData));
+  }
+
+  /**
+   * Legacy Promise-based saveToHistory
+   * @deprecated Use saveToHistory$() with subscribe() instead
+   */
   async saveToHistory(): Promise<void> {
     const userId = this.getCurrentUserId();
     if (!userId) return;
@@ -499,26 +683,25 @@ export class GroceryService implements OnDestroy {
   }
 
   private checkAndMigrateData(userId: string, currentGroceries: GroceryItem[]): void {
-    // Prevent multiple migrations in the same session
     if (this.hasMigratedThisSession) return;
 
-    // Check for seed data updates - now per user
-    const SEED_VERSION = 'v15'; // Fixed migration timing for cleaning items
+    const SEED_VERSION = 'v15';
     const storedVersion = localStorage.getItem(`homeneeds_seed_version_${userId}`);
 
     if (storedVersion !== SEED_VERSION) {
       console.log(`Migrating data to ${SEED_VERSION} for user ${userId}...`);
       this.hasMigratedThisSession = true;
-      // Use non-destructive migration with the already-loaded groceries
-      this.migrateMissingSeedData(currentGroceries).then(() => {
+      this.migrateMissingSeedData$(currentGroceries).subscribe(() => {
         localStorage.setItem(`homeneeds_seed_version_${userId}`, SEED_VERSION);
       });
     }
   }
 
-  async migrateMissingSeedData(currentItems?: GroceryItem[]): Promise<void> {
+  /**
+   * Migrate missing seed data - Observable based
+   */
+  migrateMissingSeedData$(currentItems?: GroceryItem[]): Observable<void> {
     console.log('Checking for missing seed items...');
-    // Use passed items or fall back to signal if called manually
     const items = currentItems ?? this.groceriesSignal();
     console.log(`Current items count: ${items.length}`);
 
@@ -531,14 +714,49 @@ export class GroceryService implements OnDestroy {
     ];
     console.log(`Total seed data count: ${allSeedData.length}`);
 
-    // Find items that don't exist by name
     const missingItems = allSeedData.filter(
       (seedItem) => !items.some((existing) => existing.name === seedItem.name)
     );
 
     if (missingItems.length > 0) {
       console.log(`Adding ${missingItems.length} missing items...`);
-      // Log the items being added for debugging
+      console.log('Missing items:', missingItems.map((i) => i.name).join(', '));
+
+      const creates$ = missingItems.map((item) => this.create$(item));
+      return forkJoin(creates$).pipe(
+        tap(() => console.log(`✅ Successfully added ${missingItems.length} items`)),
+        map(() => undefined)
+      );
+    } else {
+      console.log('All seed items are present.');
+      return of(undefined);
+    }
+  }
+
+  /**
+   * Legacy Promise-based migrateMissingSeedData
+   * @deprecated Use migrateMissingSeedData$() with subscribe() instead
+   */
+  async migrateMissingSeedData(currentItems?: GroceryItem[]): Promise<void> {
+    console.log('Checking for missing seed items...');
+    const items = currentItems ?? this.groceriesSignal();
+    console.log(`Current items count: ${items.length}`);
+
+    const allSeedData = [
+      ...PRODUCE_SEED_DATA,
+      ...DAIRY_SEED_DATA,
+      ...PANTRY_SEED_DATA,
+      ...BABY_SEED_DATA,
+      ...CLEANING_SEED_DATA,
+    ];
+    console.log(`Total seed data count: ${allSeedData.length}`);
+
+    const missingItems = allSeedData.filter(
+      (seedItem) => !items.some((existing) => existing.name === seedItem.name)
+    );
+
+    if (missingItems.length > 0) {
+      console.log(`Adding ${missingItems.length} missing items...`);
       console.log('Missing items:', missingItems.map((i) => i.name).join(', '));
       await Promise.all(missingItems.map((item) => this.create(item)));
       console.log(`✅ Successfully added ${missingItems.length} items`);
