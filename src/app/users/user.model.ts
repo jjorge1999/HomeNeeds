@@ -9,6 +9,7 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   avatarUrl?: string;
+  createdBy?: string; // userId of the user who created this account
   lastActive?: any; // Date or Timestamp
   createdAt: any;
 }

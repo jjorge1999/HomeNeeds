@@ -1,15 +1,17 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, effect } from '@angular/core';
 import {
   Firestore,
   collection,
   query,
   orderBy,
+  where,
   onSnapshot,
   addDoc,
   updateDoc,
   deleteDoc,
   doc,
   serverTimestamp,
+  Unsubscribe,
 } from '@angular/fire/firestore';
 import { User } from './user.model';
 import { Observable, from, of, Subject, BehaviorSubject, throwError } from 'rxjs';
@@ -21,6 +23,7 @@ import { map, tap, catchError, switchMap } from 'rxjs/operators';
 export class UserService {
   private firestore = inject(Firestore);
   private usersCollection = collection(this.firestore, 'users');
+  private unsubUsers: Unsubscribe | null = null;
 
   // Signals for reactive state
   users = signal<User[]>([]);
@@ -36,13 +39,33 @@ export class UserService {
   private migrationInProgress = signal<boolean>(false);
 
   constructor() {
-    this.subscribeToUsers();
     this.restoreSession();
+    // Subscribe to users when currentUser changes
+    effect(() => {
+      const user = this.currentUser();
+      this.subscribeToUsers(user?.userId);
+    });
   }
 
-  private subscribeToUsers(): void {
-    const q = query(this.usersCollection, orderBy('name'));
-    onSnapshot(
+  private subscribeToUsers(creatorUserId?: string): void {
+    // Cleanup previous subscription
+    if (this.unsubUsers) {
+      this.unsubUsers();
+      this.unsubUsers = null;
+    }
+
+    // If no user logged in, show empty list
+    if (!creatorUserId) {
+      this.users.set([]);
+      this.usersSubject.next([]);
+      this.loading.set(false);
+      return;
+    }
+
+    // Query users created by current user OR the current user themselves
+    const q = query(this.usersCollection, where('createdBy', '==', creatorUserId), orderBy('name'));
+
+    this.unsubUsers = onSnapshot(
       q,
       (snapshot) => {
         const usersData = snapshot.docs.map((doc) => {
@@ -56,9 +79,18 @@ export class UserService {
             createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
           } as User;
         });
+
+        // Also include the current user in the list
+        const currentUser = this.currentUser();
+        if (currentUser && !usersData.find((u) => u.id === currentUser.id)) {
+          usersData.unshift(currentUser);
+        }
+
+        // Sort by name
+        usersData.sort((a, b) => a.name.localeCompare(b.name));
+
         this.users.set(usersData);
         this.usersSubject.next(usersData);
-        this.updateCurrentUserReference(usersData);
         this.loading.set(false);
 
         // Auto-migrate users without userId
@@ -208,12 +240,17 @@ export class UserService {
   /**
    * Create user - Observable based
    */
-  createUser$(user: Omit<User, 'id' | 'userId' | 'createdAt' | 'lastActive'>): Observable<void> {
+  createUser$(
+    user: Omit<User, 'id' | 'userId' | 'createdAt' | 'lastActive' | 'createdBy'>
+  ): Observable<void> {
     const userId = this.generateUserId();
+    const currentUserId = this.currentUser()?.userId;
+
     return from(
       addDoc(this.usersCollection, {
         ...user,
         userId,
+        createdBy: currentUserId, // Track who created this user
         status: user.status || 'pending',
         lastActive: serverTimestamp(),
         createdAt: serverTimestamp(),
@@ -225,11 +262,16 @@ export class UserService {
    * Legacy Promise-based createUser
    * @deprecated Use createUser$() with subscribe() instead
    */
-  async createUser(user: Omit<User, 'id' | 'userId' | 'createdAt' | 'lastActive'>): Promise<void> {
+  async createUser(
+    user: Omit<User, 'id' | 'userId' | 'createdAt' | 'lastActive' | 'createdBy'>
+  ): Promise<void> {
     const userId = this.generateUserId();
+    const currentUserId = this.currentUser()?.userId;
+
     await addDoc(this.usersCollection, {
       ...user,
       userId,
+      createdBy: currentUserId, // Track who created this user
       status: user.status || 'pending',
       lastActive: serverTimestamp(),
       createdAt: serverTimestamp(),
