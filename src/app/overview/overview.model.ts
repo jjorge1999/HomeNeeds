@@ -3,6 +3,7 @@ export interface OverviewTask {
   userId: string; // Owner of this task
   title: string;
   description?: string;
+  specialNote?: string;
   category: 'groceries' | 'chores' | 'repairs' | 'other';
   dueDate?: Date | null;
   assigneeId?: string;
@@ -10,6 +11,8 @@ export interface OverviewTask {
   isCompleted: boolean;
   order: number; // For drag-and-drop reordering
   createdAt: Date;
+  completedAt?: Date | null; // Time when task was marked completed
+  pointsAwarded?: boolean; // Whether the point has been given to the assignee
 }
 
 export interface Assignee {
@@ -18,6 +21,7 @@ export interface Assignee {
   name: string;
   initial: string;
   color: string;
+  points?: number; // Total rewards points
 }
 
 export const ASSIGNEE_COLORS = [

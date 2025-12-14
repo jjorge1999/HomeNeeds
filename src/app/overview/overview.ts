@@ -65,6 +65,7 @@ export class OverviewComponent {
 
   // Form Data
   taskTitle = '';
+  taskSpecialNote = ''; // New field
   taskCategory = 'groceries';
   taskDueDate = ''; // String for input type="datetime-local"
   taskAssigneeId = '';
@@ -85,8 +86,14 @@ export class OverviewComponent {
   resetForm(): void {
     this.editingTask = null;
     this.taskTitle = '';
+    this.taskSpecialNote = '';
     this.taskCategory = 'groceries';
-    this.taskDueDate = '';
+    // Default due date: Tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    this.taskDueDate = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
     this.taskAssigneeId = '';
     this.showCategoryDropdown = false;
   }
@@ -111,6 +118,7 @@ export class OverviewComponent {
 
     const taskData: any = {
       title: this.taskTitle,
+      specialNote: this.taskSpecialNote || undefined,
       category: this.taskCategory,
       assigneeId: this.taskAssigneeId || undefined,
       isCompleted: false,
@@ -121,6 +129,7 @@ export class OverviewComponent {
       this.overviewService
         .updateTask$(this.editingTask.id, {
           title: this.taskTitle,
+          specialNote: this.taskSpecialNote || undefined,
           category: this.taskCategory as any,
           assigneeId: this.taskAssigneeId || undefined,
           dueDate: this.taskDueDate ? new Date(this.taskDueDate) : null,
@@ -186,6 +195,7 @@ export class OverviewComponent {
   edit(task: OverviewTask): void {
     this.editingTask = task;
     this.taskTitle = task.title;
+    this.taskSpecialNote = task.specialNote || '';
     this.taskCategory = task.category;
     this.taskAssigneeId = task.assigneeId || '';
     // Format date for datetime-local: YYYY-MM-DDTHH:mm

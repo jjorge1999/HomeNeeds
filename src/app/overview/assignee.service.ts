@@ -105,25 +105,9 @@ export class AssigneeService implements OnDestroy {
         color,
         initial,
         userId,
+        points: 0, // Initialize points to 0
       })
     ).pipe(map((docRef) => docRef.id));
-  }
-
-  /**
-   * Legacy Promise-based createAssignee
-   * @deprecated Use createAssignee$() with subscribe() instead
-   */
-  async createAssignee(name: string, color: string): Promise<void> {
-    const userId = this.getCurrentUserId();
-    if (!userId) throw new Error('User must be logged in to create assignees');
-
-    const initial = name.charAt(0).toUpperCase();
-    await addDoc(collection(this.firestore, this.COLLECTION), {
-      name,
-      color,
-      initial,
-      userId,
-    });
   }
 
   /**
@@ -139,34 +123,24 @@ export class AssigneeService implements OnDestroy {
   }
 
   /**
-   * Legacy Promise-based updateAssignee
-   * @deprecated Use updateAssignee$() with subscribe() instead
-   */
-  async updateAssignee(id: string, data: Partial<Omit<Assignee, 'id' | 'userId'>>): Promise<void> {
-    if (data.name) {
-      // Update initial if specific name is provided
-      (data as any).initial = data.name.charAt(0).toUpperCase();
-    }
-    await updateDoc(doc(this.firestore, this.COLLECTION, id), data);
-  }
-
-  /**
    * Delete assignee - Observable based
    */
   deleteAssignee$(id: string): Observable<void> {
     return from(deleteDoc(doc(this.firestore, this.COLLECTION, id)));
   }
 
-  /**
-   * Legacy Promise-based deleteAssignee
-   * @deprecated Use deleteAssignee$() with subscribe() instead
-   */
-  async deleteAssignee(id: string): Promise<void> {
-    await deleteDoc(doc(this.firestore, this.COLLECTION, id));
-  }
-
   getAssignee(id: string): Assignee | undefined {
     return this.assigneesSignal().find((a) => a.id === id);
+  }
+
+  /**
+   * Increment points for an assignee
+   */
+  incrementPoints$(id: string, amount: number = 1): Observable<void> {
+    const assignee = this.getAssignee(id);
+    if (!assignee) return of(undefined);
+    const newPoints = (assignee.points || 0) + amount;
+    return this.updateAssignee$(id, { points: newPoints });
   }
 
   ngOnDestroy(): void {

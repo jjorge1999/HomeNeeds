@@ -84,9 +84,17 @@ import { LoadingService } from '../shared/loading';
                 >
                   {{ assignee.initial }}
                 </div>
-                <span class="text-sm font-bold text-slate-900 dark:text-white">{{
-                  assignee.name
-                }}</span>
+                <div class="flex flex-col">
+                  <span class="text-sm font-bold text-slate-900 dark:text-white">{{
+                    assignee.name
+                  }}</span>
+                  <span
+                    class="text-[10px] font-bold text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md w-fit flex items-center gap-0.5 mt-0.5"
+                  >
+                    <span class="material-symbols-outlined text-[10px]">emoji_events</span>
+                    {{ assignee.points || 0 }} pts
+                  </span>
+                </div>
               </div>
               <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button

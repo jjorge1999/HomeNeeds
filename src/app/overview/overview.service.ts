@@ -15,13 +15,24 @@ import {
 import { initializeApp } from 'firebase/app';
 import { environment } from '../../environments/environment';
 import { OverviewTask } from './overview.model';
+import { AssigneeService } from './assignee.service';
 import { UserService } from '../users/user.service';
-import { Observable, from, of, BehaviorSubject, throwError, forkJoin } from 'rxjs';
+import {
+  interval,
+  Subscription,
+  Observable,
+  from,
+  of,
+  BehaviorSubject,
+  throwError,
+  forkJoin,
+} from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class OverviewService implements OnDestroy {
   private userService = inject(UserService);
+  private assigneeService = inject(AssigneeService);
   private firestore: Firestore;
   private TASKS_COLLECTION = 'overview_tasks';
 
@@ -33,6 +44,7 @@ export class OverviewService implements OnDestroy {
   readonly tasks$ = this.tasksSubject.asObservable();
 
   private unsubTasks: Unsubscribe | null = null;
+  private rewardIntervalSub: Subscription | null = null;
 
   constructor() {
     const app = initializeApp(environment.firebase);
@@ -47,13 +59,67 @@ export class OverviewService implements OnDestroy {
       if (currentUser && currentUser.userId) {
         console.log('📋 Loading tasks for user:', currentUser.userId);
         this.initRealtimeData(currentUser.userId);
+        this.startRewardProcessor();
       } else {
         // Clear data when no user is logged in - DO NOT query Firestore
         console.log('🔒 No user logged in - clearing task data');
         this.tasksSignal.set([]);
         this.tasksSubject.next([]);
+        this.stopRewardProcessor();
       }
     });
+  }
+
+  private startRewardProcessor(): void {
+    this.stopRewardProcessor();
+    // Check every 60 seconds
+    this.rewardIntervalSub = interval(60000).subscribe(() => {
+      this.processPendingRewards();
+    });
+  }
+
+  private stopRewardProcessor(): void {
+    if (this.rewardIntervalSub) {
+      this.rewardIntervalSub.unsubscribe();
+      this.rewardIntervalSub = null;
+    }
+  }
+
+  /**
+   * Process tasks that are completed but not yet rewarded
+   * Reward is given if completion was > 1 hour ago
+   */
+  private processPendingRewards(): void {
+    const tasks = this.tasksSignal();
+    const now = Date.now();
+    const ONE_HOUR = 60 * 60 * 1000;
+
+    const pendingRewards = tasks.filter((t) => {
+      if (!t.isCompleted || !t.assigneeId || t.pointsAwarded) return false;
+      if (!t.completedAt) return false; // Should have completedAt if completed
+
+      const completedTime =
+        t.completedAt instanceof Date ? t.completedAt.getTime() : new Date(t.completedAt).getTime();
+      return now - completedTime >= ONE_HOUR;
+    });
+
+    if (pendingRewards.length > 0) {
+      console.log(`🏆 Found ${pendingRewards.length} tasks ready for rewarding`);
+
+      pendingRewards.forEach((task) => {
+        if (!task.assigneeId) return;
+
+        // 1. Award point to assignee
+        this.assigneeService.incrementPoints$(task.assigneeId, 1).subscribe({
+          next: () => {
+            console.log(`✅ Awarded point to assignee ${task.assigneeId} for task ${task.id}`);
+            // 2. Mark task as rewarded
+            this.updateTask$(task.id, { pointsAwarded: true }).subscribe();
+          },
+          error: (err) => console.error('Error awarding points:', err),
+        });
+      });
+    }
   }
 
   private getCurrentUserId(): string {
@@ -94,10 +160,18 @@ export class OverviewService implements OnDestroy {
             ? data['createdAt'].toDate()
             : new Date();
 
+        const completedAt =
+          data['completedAt'] && typeof data['completedAt'].toDate === 'function'
+            ? data['completedAt'].toDate()
+            : data['completedAt']
+            ? new Date(data['completedAt'])
+            : undefined;
+
         return {
           ...data,
           dueDate,
           createdAt,
+          completedAt,
           order: data['order'] ?? Date.now(), // Default order for old tasks
         } as OverviewTask;
       });
@@ -105,6 +179,10 @@ export class OverviewService implements OnDestroy {
       items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       this.tasksSignal.set(items);
       this.tasksSubject.next(items);
+
+      // Check for rewards immediately whenever data updates (e.g. on load)
+      // This ensures we don't just wait for the timer if the time has already passed
+      this.processPendingRewards();
     });
   }
 
@@ -132,50 +210,27 @@ export class OverviewService implements OnDestroy {
         userId,
         order: maxOrder + 1000, // Use 1000 increments for easier reordering
         createdAt: new Date(),
+        pointsAwarded: false, // Initialize
+        completedAt: null,
       })
     ).pipe(map(() => id));
-  }
-
-  /**
-   * Legacy Promise-based createTask
-   * @deprecated Use createTask$() with subscribe() instead
-   */
-  async createTask(
-    task: Omit<OverviewTask, 'id' | 'createdAt' | 'userId' | 'order'>
-  ): Promise<void> {
-    const userId = this.getCurrentUserId();
-    if (!userId) throw new Error('User must be logged in to create tasks');
-
-    const categoryTasks = this.tasksSignal().filter((t) => t.category === task.category);
-    const maxOrder =
-      categoryTasks.length > 0 ? Math.max(...categoryTasks.map((t) => t.order ?? 0)) : 0;
-
-    const id = `task_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-    await setDoc(doc(this.firestore, this.TASKS_COLLECTION, id), {
-      ...task,
-      id,
-      userId,
-      order: maxOrder + 1000,
-      createdAt: new Date(),
-    });
   }
 
   /**
    * Update task - Observable based
    */
   updateTask$(id: string, updates: Partial<Omit<OverviewTask, 'id' | 'userId'>>): Observable<void> {
-    return from(updateDoc(doc(this.firestore, this.TASKS_COLLECTION, id), updates));
-  }
+    // If completion status changed, handle completedAt
+    const updateData = { ...updates };
 
-  /**
-   * Legacy Promise-based updateTask
-   * @deprecated Use updateTask$() with subscribe() instead
-   */
-  async updateTask(
-    id: string,
-    updates: Partial<Omit<OverviewTask, 'id' | 'userId'>>
-  ): Promise<void> {
-    await updateDoc(doc(this.firestore, this.TASKS_COLLECTION, id), updates);
+    if (updates.isCompleted === true) {
+      updateData.completedAt = new Date();
+    } else if (updates.isCompleted === false) {
+      updateData.completedAt = null; // Reset if uncompleted
+      updateData.pointsAwarded = false; // Reset reward status if uncompleted
+    }
+
+    return from(updateDoc(doc(this.firestore, this.TASKS_COLLECTION, id), updateData));
   }
 
   /**
@@ -185,16 +240,9 @@ export class OverviewService implements OnDestroy {
     return from(deleteDoc(doc(this.firestore, this.TASKS_COLLECTION, id)));
   }
 
-  /**
-   * Legacy Promise-based deleteTask
-   * @deprecated Use deleteTask$() with subscribe() instead
-   */
-  async deleteTask(id: string): Promise<void> {
-    await deleteDoc(doc(this.firestore, this.TASKS_COLLECTION, id));
-  }
-
   ngOnDestroy(): void {
     this.cleanupSubscription();
+    this.stopRewardProcessor();
   }
 
   /**
