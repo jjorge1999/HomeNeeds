@@ -51,12 +51,20 @@
                     </span>
                 </div>
                 
-                <div class="grid grid-cols-1 gap-3">
+                <div class="grid grid-cols-1 gap-3" 
+                     cdkDropList 
+                     [cdkDropListData]="groupedTasks()[cat.id]"
+                     (cdkDropListDropped)="onDrop($event, cat.id)">
                     @for (task of groupedTasks()[cat.id]; track task.id) {
-                        <div class="group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-transparent dark:border-border-dark hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-none relative overflow-hidden active:scale-[0.99] active:shadow-inner" 
+                        <div cdkDrag 
+                             [cdkDragData]="task"
+                             class="group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-transparent dark:border-border-dark hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-none relative overflow-hidden active:scale-[0.99] active:shadow-inner cursor-grab" 
                              [class.opacity-50]="task.isCompleted">
                             
-                            <span class="material-symbols-outlined text-slate-300 dark:text-border-dark group-hover:text-slate-400 dark:group-hover:text-slate-500 cursor-grab select-none transition-colors">drag_indicator</span>
+                            <!-- Drag placeholder -->
+                            <div *cdkDragPlaceholder class="w-full h-16 rounded-xl bg-primary/10 border-2 border-dashed border-primary/30"></div>
+                            
+                            <span class="material-symbols-outlined text-slate-300 dark:text-border-dark group-hover:text-slate-400 dark:group-hover:text-slate-500 cursor-grab select-none transition-colors" cdkDragHandle>drag_indicator</span>
                             
                             <label class="relative flex items-center p-2 rounded-full cursor-pointer">
                                 <input type="checkbox" [checked]="task.isCompleted" (change)="toggleComplete(task)" 

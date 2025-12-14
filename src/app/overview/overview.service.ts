@@ -16,7 +16,7 @@ import { initializeApp } from 'firebase/app';
 import { environment } from '../../environments/environment';
 import { OverviewTask } from './overview.model';
 import { UserService } from '../users/user.service';
-import { Observable, from, of, BehaviorSubject, throwError } from 'rxjs';
+import { Observable, from, of, BehaviorSubject, throwError, forkJoin } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
@@ -98,10 +98,11 @@ export class OverviewService implements OnDestroy {
           ...data,
           dueDate,
           createdAt,
+          order: data['order'] ?? Date.now(), // Default order for old tasks
         } as OverviewTask;
       });
-      // Sort client-side by createdAt descending
-      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      // Sort client-side by order (ascending - lower order first)
+      items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       this.tasksSignal.set(items);
       this.tasksSubject.next(items);
     });
@@ -110,11 +111,18 @@ export class OverviewService implements OnDestroy {
   /**
    * Create task - Observable based
    */
-  createTask$(task: Omit<OverviewTask, 'id' | 'createdAt' | 'userId'>): Observable<string> {
+  createTask$(
+    task: Omit<OverviewTask, 'id' | 'createdAt' | 'userId' | 'order'>
+  ): Observable<string> {
     const userId = this.getCurrentUserId();
     if (!userId) {
       return throwError(() => new Error('User must be logged in to create tasks'));
     }
+
+    // Get max order for this category to place new task at the end
+    const categoryTasks = this.tasksSignal().filter((t) => t.category === task.category);
+    const maxOrder =
+      categoryTasks.length > 0 ? Math.max(...categoryTasks.map((t) => t.order ?? 0)) : 0;
 
     const id = `task_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     return from(
@@ -122,6 +130,7 @@ export class OverviewService implements OnDestroy {
         ...task,
         id,
         userId,
+        order: maxOrder + 1000, // Use 1000 increments for easier reordering
         createdAt: new Date(),
       })
     ).pipe(map(() => id));
@@ -131,15 +140,22 @@ export class OverviewService implements OnDestroy {
    * Legacy Promise-based createTask
    * @deprecated Use createTask$() with subscribe() instead
    */
-  async createTask(task: Omit<OverviewTask, 'id' | 'createdAt' | 'userId'>): Promise<void> {
+  async createTask(
+    task: Omit<OverviewTask, 'id' | 'createdAt' | 'userId' | 'order'>
+  ): Promise<void> {
     const userId = this.getCurrentUserId();
     if (!userId) throw new Error('User must be logged in to create tasks');
+
+    const categoryTasks = this.tasksSignal().filter((t) => t.category === task.category);
+    const maxOrder =
+      categoryTasks.length > 0 ? Math.max(...categoryTasks.map((t) => t.order ?? 0)) : 0;
 
     const id = `task_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     await setDoc(doc(this.firestore, this.TASKS_COLLECTION, id), {
       ...task,
       id,
       userId,
+      order: maxOrder + 1000,
       createdAt: new Date(),
     });
   }
@@ -179,5 +195,14 @@ export class OverviewService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.cleanupSubscription();
+  }
+
+  /**
+   * Reorder tasks within a category - Observable based
+   * @param tasks Array of tasks in their new order
+   */
+  reorderTasks$(tasks: OverviewTask[]): Observable<void> {
+    const updates$ = tasks.map((task, index) => this.updateTask$(task.id, { order: index * 1000 }));
+    return forkJoin(updates$).pipe(map(() => undefined));
   }
 }

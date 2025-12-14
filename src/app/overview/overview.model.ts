@@ -8,6 +8,7 @@ export interface OverviewTask {
   assigneeId?: string;
   imageUrl?: string;
   isCompleted: boolean;
+  order: number; // For drag-and-drop reordering
   createdAt: Date;
 }
 

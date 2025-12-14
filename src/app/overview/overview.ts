@@ -1,6 +1,7 @@
 import { Component, computed, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { OverviewService } from './overview.service';
 import { OverviewTask, TASK_CATEGORIES, Assignee, ASSIGNEE_COLORS } from './overview.model';
 import { DialogService } from '../shared/dialog/dialog.service';
@@ -12,7 +13,7 @@ import { LoadingService } from '../shared/loading';
 @Component({
   selector: 'app-overview',
   standalone: true,
-  imports: [CommonModule, FormsModule, AssigneeManagementComponent],
+  imports: [CommonModule, FormsModule, AssigneeManagementComponent, DragDropModule],
   templateUrl: './overview.html',
   styleUrl: './overview.css',
   host: {
@@ -208,5 +209,23 @@ export class OverviewComponent {
   getAssigneeById(id: string | undefined): Assignee | undefined {
     if (!id) return undefined;
     return this.assignees().find((a) => a.id === id);
+  }
+
+  // Drag and drop reordering
+  onDrop(event: CdkDragDrop<OverviewTask[]>, categoryId: string): void {
+    if (event.previousIndex === event.currentIndex) return;
+
+    // Get tasks for this category
+    const categoryTasks = [...(this.groupedTasks()[categoryId] || [])];
+
+    // Reorder the array locally
+    moveItemInArray(categoryTasks, event.previousIndex, event.currentIndex);
+
+    // Persist the new order to Firestore
+    this.loadingService.show('Reordering...');
+    this.overviewService.reorderTasks$(categoryTasks).subscribe({
+      next: () => this.loadingService.hide(),
+      error: () => this.loadingService.hide(),
+    });
   }
 }

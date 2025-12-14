@@ -1,0 +1,43 @@
+/* Drag and Drop Styles */
+
+/* Dragging item style */
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(159, 232, 112, 0.5);
+  background: var(--surface-dark, #1a1d21);
+  opacity: 0.95;
+  transform: scale(1.02);
+}
+
+/* Placeholder shown where item will drop */
+.cdk-drag-placeholder {
+  opacity: 0.3;
+  background: rgba(159, 232, 112, 0.1);
+  border: 2px dashed rgba(159, 232, 112, 0.3);
+  border-radius: 0.75rem;
+}
+
+/* Element being dragged */
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Drop list animation */
+.cdk-drop-list-dragging .cdk-drag {
+  transition: transform 250ms cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Handle cursor */
+[cdkDragHandle] {
+  cursor: grab;
+}
+
+[cdkDragHandle]:active {
+  cursor: grabbing;
+}
+
+/* Dragging state */
+.cdk-drag:active {
+  cursor: grabbing;
+}
