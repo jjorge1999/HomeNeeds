@@ -5,6 +5,7 @@ import { UserService } from './user.service';
 import { User, USER_ROLES, UserRole, UserStatus } from './user.model';
 import { DialogService } from '../shared/dialog/dialog.service';
 import { ImageService } from '../groceries/image.service';
+import { LoadingService } from '../shared/loading';
 
 @Component({
   selector: 'app-users',
@@ -16,6 +17,7 @@ export class UsersComponent {
   private userService = inject(UserService);
   private dialogService = inject(DialogService);
   private imageService = inject(ImageService);
+  private loadingService = inject(LoadingService);
 
   users = this.userService.users;
   currentUser = this.userService.currentUser;
@@ -27,18 +29,18 @@ export class UsersComponent {
   loginPasswordInput = '';
   loginError = '';
 
-  openLoginModal(user: User) {
+  openLoginModal(user: User): void {
     this.loginTargetUser = user;
     this.loginPasswordInput = '';
     this.loginError = '';
     this.showLoginModal = true;
   }
 
-  closeLoginModal() {
+  closeLoginModal(): void {
     this.showLoginModal = false;
   }
 
-  async attemptLogin() {
+  attemptLogin(): void {
     if (!this.loginTargetUser) return;
 
     const storedPassword = this.loginTargetUser.password || '';
@@ -47,11 +49,17 @@ export class UsersComponent {
       return;
     }
 
-    try {
-      await this.userService.login(this.loginTargetUser);
-    } finally {
-      this.closeLoginModal();
-    }
+    this.loadingService.show('Logging in...');
+    this.userService.login$(this.loginTargetUser).subscribe({
+      next: () => {
+        this.loadingService.hide();
+        this.closeLoginModal();
+      },
+      error: () => {
+        this.loadingService.hide();
+        this.closeLoginModal();
+      },
+    });
   }
 
   // Filters
@@ -89,13 +97,13 @@ export class UsersComponent {
   formStatus: UserStatus = 'active';
   formAvatarUrl = '';
 
-  openAddModal() {
+  openAddModal(): void {
     this.editingUser = null;
     this.resetForm();
     this.showModal = true;
   }
 
-  openEditModal(user: User) {
+  openEditModal(user: User): void {
     this.editingUser = user;
     this.formName = user.name;
     this.formRole = user.role;
@@ -104,11 +112,11 @@ export class UsersComponent {
     this.showModal = true;
   }
 
-  closeModal() {
+  closeModal(): void {
     this.showModal = false;
   }
 
-  resetForm() {
+  resetForm(): void {
     this.formName = '';
     this.formPassword = '';
     this.formRole = 'member';
@@ -116,29 +124,37 @@ export class UsersComponent {
     this.formAvatarUrl = '';
   }
 
-  removeAvatar(event: Event) {
+  removeAvatar(event: Event): void {
     event.stopPropagation();
     this.formAvatarUrl = '';
   }
 
-  async saveUser() {
+  saveUser(): void {
     if (!this.formName.trim()) return;
 
-    try {
-      if (this.editingUser) {
-        const updates: any = {
-          name: this.formName,
-          role: this.formRole,
-          status: this.formStatus,
-          avatarUrl: this.formAvatarUrl,
-        };
-        if (this.formPassword) {
-          updates.password = this.formPassword;
-        }
-        await this.userService.updateUser(this.editingUser.id, updates);
-      } else {
-        // New User
-        await this.userService.createUser({
+    this.loadingService.show('Saving user...');
+
+    if (this.editingUser) {
+      const updates: any = {
+        name: this.formName,
+        role: this.formRole,
+        status: this.formStatus,
+        avatarUrl: this.formAvatarUrl,
+      };
+      if (this.formPassword) {
+        updates.password = this.formPassword;
+      }
+      this.userService.updateUser$(this.editingUser.id, updates).subscribe({
+        next: () => {
+          this.loadingService.hide();
+          this.closeModal();
+        },
+        error: () => this.loadingService.hide(),
+      });
+    } else {
+      // New User
+      this.userService
+        .createUser$({
           name: this.formName,
           password: this.formPassword,
           role: this.formRole,
@@ -146,25 +162,37 @@ export class UsersComponent {
           avatarUrl:
             this.formAvatarUrl ||
             `https://ui-avatars.com/api/?name=${this.formName}&background=random`,
+        })
+        .subscribe({
+          next: () => {
+            this.loadingService.hide();
+            this.closeModal();
+          },
+          error: () => this.loadingService.hide(),
         });
-      }
-    } finally {
-      this.closeModal();
     }
   }
 
-  async deleteUser(user: User) {
-    if (await this.dialogService.confirm(`Delete user ${user.name}?`, 'Delete User')) {
-      await this.userService.deleteUser(user.id);
-    }
+  deleteUser(user: User): void {
+    this.dialogService
+      .confirm$(`Delete user ${user.name}?`, 'Delete User')
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.loadingService.show('Deleting user...');
+          this.userService.deleteUser$(user.id).subscribe({
+            next: () => this.loadingService.hide(),
+            error: () => this.loadingService.hide(),
+          });
+        }
+      });
   }
 
   // Helpers for Template
-  getRoleLabel(role: string) {
+  getRoleLabel(role: string): string {
     return this.userRoles.find((r) => r.value === role)?.label || role;
   }
 
-  getRoleClass(role: string) {
+  getRoleClass(role: string): string {
     return this.userRoles.find((r) => r.value === role)?.colorClass || 'bg-gray-100 text-gray-800';
   }
 
@@ -188,10 +216,16 @@ export class UsersComponent {
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
-  async onAvatarSelected(event: Event) {
+  onAvatarSelected(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
-      this.formAvatarUrl = await this.imageService.compressImage(file);
+      this.loadingService.show('Processing image...');
+      this.imageService
+        .compressImage(file)
+        .then((compressedUrl) => {
+          this.formAvatarUrl = compressedUrl;
+        })
+        .finally(() => this.loadingService.hide());
     }
   }
 }

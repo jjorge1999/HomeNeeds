@@ -7,6 +7,7 @@ import { DialogService } from '../shared/dialog/dialog.service';
 import { AssigneeService } from './assignee.service';
 import { AssigneeManagementComponent } from './assignee-management.component';
 import { GroceryService } from '../groceries/grocery.service';
+import { LoadingService } from '../shared/loading';
 
 @Component({
   selector: 'app-overview',
@@ -23,6 +24,7 @@ export class OverviewComponent {
   private dialogService = inject(DialogService);
   private assigneeService = inject(AssigneeService);
   private groceryService = inject(GroceryService);
+  private loadingService = inject(LoadingService);
 
   tasks = this.overviewService.tasks;
   assignees = this.assigneeService.assignees;
@@ -47,8 +49,6 @@ export class OverviewComponent {
       }
     });
 
-    // Remove empty groups if desired? No, keep structure or filter in template.
-    // Let's filter in template or return all.
     return groups;
   });
 
@@ -74,14 +74,14 @@ export class OverviewComponent {
 
   constructor() {}
 
-  toggleAddModal(show: boolean) {
+  toggleAddModal(show: boolean): void {
     this.showAddModal = show;
     if (!show) {
       this.resetForm();
     }
   }
 
-  resetForm() {
+  resetForm(): void {
     this.editingTask = null;
     this.taskTitle = '';
     this.taskCategory = 'groceries';
@@ -90,11 +90,11 @@ export class OverviewComponent {
     this.showCategoryDropdown = false;
   }
 
-  toggleCategoryDropdown() {
+  toggleCategoryDropdown(): void {
     this.showCategoryDropdown = !this.showCategoryDropdown;
   }
 
-  selectCategory(id: string) {
+  selectCategory(id: string): void {
     this.taskCategory = id;
     this.showCategoryDropdown = false;
   }
@@ -103,8 +103,10 @@ export class OverviewComponent {
     return this.categories.find((c) => c.id === this.taskCategory)?.label || 'Select Category';
   }
 
-  async saveTask() {
+  saveTask(): void {
     if (!this.taskTitle.trim()) return;
+
+    this.loadingService.show('Saving task...');
 
     const taskData: any = {
       title: this.taskTitle,
@@ -115,47 +117,72 @@ export class OverviewComponent {
     };
 
     if (this.editingTask) {
-      await this.overviewService.updateTask(this.editingTask.id, {
-        title: this.taskTitle,
-        category: this.taskCategory as any,
-        assigneeId: this.taskAssigneeId || undefined,
-        dueDate: this.taskDueDate ? new Date(this.taskDueDate) : null,
-      });
+      this.overviewService
+        .updateTask$(this.editingTask.id, {
+          title: this.taskTitle,
+          category: this.taskCategory as any,
+          assigneeId: this.taskAssigneeId || undefined,
+          dueDate: this.taskDueDate ? new Date(this.taskDueDate) : null,
+        })
+        .subscribe({
+          next: () => {
+            this.loadingService.hide();
+            this.toggleAddModal(false);
+          },
+          error: () => this.loadingService.hide(),
+        });
     } else {
-      await this.overviewService.createTask(taskData);
+      this.overviewService.createTask$(taskData).subscribe({
+        next: () => {
+          this.loadingService.hide();
+          this.toggleAddModal(false);
+        },
+        error: () => this.loadingService.hide(),
+      });
     }
-    this.toggleAddModal(false);
   }
 
-  async toggleComplete(task: OverviewTask) {
+  toggleComplete(task: OverviewTask): void {
     const newStatus = !task.isCompleted;
-    await this.overviewService.updateTask(task.id, { isCompleted: newStatus });
-
-    if (newStatus && task.category === 'groceries') {
-      const item = this.groceryService.groceries().find((g) => g.name === task.title);
-      if (item && item.isInCart) {
-        await this.groceryService.update(item.id, { isInCart: false, isChecked: false });
-      }
-    }
-  }
-
-  async delete(id: string) {
-    if (await this.dialogService.confirm('Delete this task?', 'Delete Task')) {
-      // Capture task before deletion
-      const task = this.tasks().find((t) => t.id === id);
-      await this.overviewService.deleteTask(id);
-
-      // Sync with grocery list
-      if (task && task.category === 'groceries') {
-        const item = this.groceryService.groceries().find((g) => g.name === task.title);
-        if (item && item.isInCart) {
-          await this.groceryService.update(item.id, { isInCart: false, isChecked: false });
+    this.overviewService.updateTask$(task.id, { isCompleted: newStatus }).subscribe({
+      next: () => {
+        if (newStatus && task.category === 'groceries') {
+          const item = this.groceryService.groceries().find((g) => g.name === task.title);
+          if (item && item.isInCart) {
+            this.groceryService.update$(item.id, { isInCart: false, isChecked: false }).subscribe();
+          }
         }
-      }
-    }
+      },
+    });
   }
 
-  edit(task: OverviewTask) {
+  delete(id: string): void {
+    this.dialogService.confirm$('Delete this task?', 'Delete Task').subscribe((confirmed) => {
+      if (confirmed) {
+        // Capture task before deletion
+        const task = this.tasks().find((t) => t.id === id);
+
+        this.loadingService.show('Deleting...');
+        this.overviewService.deleteTask$(id).subscribe({
+          next: () => {
+            // Sync with grocery list
+            if (task && task.category === 'groceries') {
+              const item = this.groceryService.groceries().find((g) => g.name === task.title);
+              if (item && item.isInCart) {
+                this.groceryService
+                  .update$(item.id, { isInCart: false, isChecked: false })
+                  .subscribe();
+              }
+            }
+            this.loadingService.hide();
+          },
+          error: () => this.loadingService.hide(),
+        });
+      }
+    });
+  }
+
+  edit(task: OverviewTask): void {
     this.editingTask = task;
     this.taskTitle = task.title;
     this.taskCategory = task.category;
@@ -170,11 +197,11 @@ export class OverviewComponent {
   }
 
   // Assignee Management
-  openManageAssignees() {
+  openManageAssignees(): void {
     this.showAssigneeModal = true;
   }
 
-  closeAssigneeModal() {
+  closeAssigneeModal(): void {
     this.showAssigneeModal = false;
   }
 

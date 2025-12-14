@@ -5,6 +5,7 @@ import { Assignee, ASSIGNEE_COLORS } from './overview.model';
 import { AssigneeService } from './assignee.service';
 import { OverviewService } from './overview.service';
 import { DialogService } from '../shared/dialog/dialog.service';
+import { LoadingService } from '../shared/loading';
 
 @Component({
   selector: 'app-assignee-management',
@@ -117,6 +118,7 @@ export class AssigneeManagementComponent {
   private assigneeService = inject(AssigneeService);
   private overviewService = inject(OverviewService);
   private dialogService = inject(DialogService);
+  private loadingService = inject(LoadingService);
 
   assignees = this.assigneeService.assignees;
   assigneeColors = ASSIGNEE_COLORS;
@@ -125,45 +127,66 @@ export class AssigneeManagementComponent {
   assigneeName = '';
   assigneeColor = ASSIGNEE_COLORS[0];
 
-  onClose() {
+  onClose(): void {
     this.close.emit();
   }
 
-  resetForm() {
+  resetForm(): void {
     this.editingAssignee = null;
     this.assigneeName = '';
     this.assigneeColor = this.assigneeColors[0];
   }
 
-  editAssignee(assignee: Assignee) {
+  editAssignee(assignee: Assignee): void {
     this.editingAssignee = assignee;
     this.assigneeName = assignee.name;
     this.assigneeColor = assignee.color;
   }
 
-  async saveAssignee() {
+  saveAssignee(): void {
     if (!this.assigneeName.trim()) return;
 
+    this.loadingService.show('Saving...');
+
     if (this.editingAssignee) {
-      await this.assigneeService.updateAssignee(this.editingAssignee.id, {
-        name: this.assigneeName,
-        color: this.assigneeColor,
-      });
+      this.assigneeService
+        .updateAssignee$(this.editingAssignee.id, {
+          name: this.assigneeName,
+          color: this.assigneeColor,
+        })
+        .subscribe({
+          next: () => {
+            this.loadingService.hide();
+            this.resetForm();
+          },
+          error: () => this.loadingService.hide(),
+        });
     } else {
-      await this.assigneeService.createAssignee(this.assigneeName, this.assigneeColor);
+      this.assigneeService.createAssignee$(this.assigneeName, this.assigneeColor).subscribe({
+        next: () => {
+          this.loadingService.hide();
+          this.resetForm();
+        },
+        error: () => this.loadingService.hide(),
+      });
     }
-    this.resetForm();
   }
 
-  async deleteAssignee(id: string) {
+  deleteAssignee(id: string): void {
     const activeTasks = this.overviewService.tasks().filter((t) => t.assigneeId === id);
     if (activeTasks.length > 0) {
-      await this.dialogService.alert('Cannot delete assignee with active tasks.');
+      this.dialogService.alert$('Cannot delete assignee with active tasks.').subscribe();
       return;
     }
 
-    if (await this.dialogService.confirm('Delete this assignee?', 'Confirm')) {
-      await this.assigneeService.deleteAssignee(id);
-    }
+    this.dialogService.confirm$('Delete this assignee?', 'Confirm').subscribe((confirmed) => {
+      if (confirmed) {
+        this.loadingService.show('Deleting...');
+        this.assigneeService.deleteAssignee$(id).subscribe({
+          next: () => this.loadingService.hide(),
+          error: () => this.loadingService.hide(),
+        });
+      }
+    });
   }
 }

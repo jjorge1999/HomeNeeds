@@ -6,6 +6,7 @@ import { ImageService } from './image.service';
 import { GroceryItem, CategoryItem, CATEGORY_ICONS, CATEGORY_COLORS } from './grocery.model';
 import { OverviewService } from '../overview/overview.service';
 import { DialogService } from '../shared/dialog/dialog.service';
+import { LoadingService } from '../shared/loading';
 
 @Component({
   selector: 'app-groceries',
@@ -21,6 +22,7 @@ export class GroceriesComponent {
   private imageService = inject(ImageService);
   private dialogService = inject(DialogService);
   private overviewService = inject(OverviewService);
+  private loadingService = inject(LoadingService);
 
   // Expose service signals to template
   groceries = this.groceryService.groceries;
@@ -89,48 +91,69 @@ export class GroceriesComponent {
     this.showCategoryModal = true;
   }
 
-  async saveCategory(): Promise<void> {
+  saveCategory(): void {
     if (!this.editCategoryName.trim()) return;
+
+    this.loadingService.show('Saving category...');
 
     if (this.editingCategory) {
       // Update existing category
-      await this.groceryService.updateCategory(this.editingCategory.id, {
-        name: this.editCategoryName.trim(),
-        icon: this.editCategoryIcon,
-        color: this.editCategoryColor,
-      });
+      this.groceryService
+        .updateCategory$(this.editingCategory.id, {
+          name: this.editCategoryName.trim(),
+          icon: this.editCategoryIcon,
+          color: this.editCategoryColor,
+        })
+        .subscribe({
+          next: () => {
+            this.loadingService.hide();
+            this.closeCategoryModal();
+          },
+          error: () => this.loadingService.hide(),
+        });
     } else {
       // Create new category
-      await this.groceryService.createCategory({
-        name: this.editCategoryName.trim(),
-        icon: this.editCategoryIcon,
-        color: this.editCategoryColor,
-      });
+      this.groceryService
+        .createCategory$({
+          name: this.editCategoryName.trim(),
+          icon: this.editCategoryIcon,
+          color: this.editCategoryColor,
+        })
+        .subscribe({
+          next: () => {
+            this.loadingService.hide();
+            this.closeCategoryModal();
+          },
+          error: () => this.loadingService.hide(),
+        });
     }
-    this.closeCategoryModal();
   }
 
-  async deleteCategory(categoryId: string): Promise<void> {
+  deleteCategory(categoryId: string): void {
     const category = this.groceryService.getCategory(categoryId);
     if (!category || category.isDefault) return;
 
     // Check item count first
     const itemCount = this.groceryService.getItemCountInCategory(categoryId);
     if (itemCount > 0) {
-      await this.dialogService.alert(
-        `Cannot delete category "${category.name}" because it has ${itemCount} item(s). Please move or delete the items first.`
-      );
+      this.dialogService
+        .alert$(
+          `Cannot delete category "${category.name}" because it has ${itemCount} item(s). Please move or delete the items first.`
+        )
+        .subscribe();
       return;
     }
 
-    if (
-      await this.dialogService.confirm(`Delete category "${category.name}"?`, 'Delete Category')
-    ) {
-      const result = this.groceryService.deleteCategory(categoryId);
-      if (!result.success && result.error) {
-        await this.dialogService.alert(result.error);
-      }
-    }
+    this.dialogService
+      .confirm$(`Delete category "${category.name}"?`, 'Delete Category')
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          const result = this.groceryService.deleteCategory(categoryId);
+          if (!result.success && result.error) {
+            this.dialogService.alert$(result.error).subscribe();
+          }
+        }
+      });
   }
 
   closeCategoryModal(): void {
@@ -143,29 +166,36 @@ export class GroceriesComponent {
 
   // ========== Image Upload ==========
 
-  async onImageFileSelected(event: Event): Promise<void> {
+  onImageFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
 
     if (!file) return;
 
     if (!this.imageService.isValidImageFile(file)) {
-      await this.dialogService.alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+      this.dialogService
+        .alert$('Please select a valid image file (JPEG, PNG, GIF, or WebP)')
+        .subscribe();
       return;
     }
 
     this.isUploadingImage = true;
+    this.loadingService.show('Processing image...');
 
-    try {
-      const compressedImage = await this.imageService.compressImage(file);
-      this.editItemImageUrl = compressedImage;
-    } catch (error) {
-      console.error('Error compressing image:', error);
-      await this.dialogService.alert('Failed to process image. Please try again.');
-    } finally {
-      this.isUploadingImage = false;
-      input.value = '';
-    }
+    this.imageService
+      .compressImage(file)
+      .then((compressedImage) => {
+        this.editItemImageUrl = compressedImage;
+      })
+      .catch((error) => {
+        console.error('Error compressing image:', error);
+        this.dialogService.alert$('Failed to process image. Please try again.').subscribe();
+      })
+      .finally(() => {
+        this.isUploadingImage = false;
+        this.loadingService.hide();
+        input.value = '';
+      });
   }
 
   removeImage(): void {
@@ -194,31 +224,36 @@ export class GroceriesComponent {
 
   // ========== Grocery Item CRUD ==========
 
-  async addItem(): Promise<void> {
+  addItem(): void {
     if (this.newItemName.trim()) {
-      await this.groceryService.create({
-        name: this.newItemName.trim(),
-        category: 'other',
-        isInCart: false,
-        isChecked: false,
-      });
-      this.newItemName = '';
+      this.groceryService
+        .create$({
+          name: this.newItemName.trim(),
+          category: 'other',
+          isInCart: false,
+          isChecked: false,
+        })
+        .subscribe(() => {
+          this.newItemName = '';
+        });
     }
   }
 
-  async addItemWithCategory(name: string, category: string): Promise<void> {
+  addItemWithCategory(name: string, category: string): void {
     if (name.trim()) {
-      await this.groceryService.create({
-        name: name.trim(),
-        category,
-        isInCart: false,
-        isChecked: false,
-      });
+      this.groceryService
+        .create$({
+          name: name.trim(),
+          category,
+          isInCart: false,
+          isChecked: false,
+        })
+        .subscribe();
     }
   }
 
   deleteItem(id: string): void {
-    this.groceryService.delete(id);
+    this.groceryService.delete$(id).subscribe();
   }
 
   startEdit(item: GroceryItem): void {
@@ -238,31 +273,47 @@ export class GroceriesComponent {
     this.showAddModal = true;
   }
 
-  async saveEdit(): Promise<void> {
+  saveEdit(): void {
     if (this.editItemName.trim()) {
-      if (this.editingItem) {
-        await this.groceryService.update(this.editingItem.id, {
-          name: this.editItemName.trim(),
-          category: this.editItemCategory,
-          imageUrl: this.editItemImageUrl.trim() || undefined,
-        });
-      } else {
-        await this.groceryService.create({
-          name: this.editItemName.trim(),
-          category: this.editItemCategory,
-          imageUrl: this.editItemImageUrl.trim() || undefined,
-          isInCart: this.isAddingFromSidebar,
-          isChecked: false,
-        });
+      this.loadingService.show('Saving...');
 
-        if (this.isAddingFromSidebar) {
-          this.createOverviewTask(
-            this.editItemName.trim(),
-            this.editItemImageUrl.trim() || undefined
-          );
-        }
+      if (this.editingItem) {
+        this.groceryService
+          .update$(this.editingItem.id, {
+            name: this.editItemName.trim(),
+            category: this.editItemCategory,
+            imageUrl: this.editItemImageUrl.trim() || undefined,
+          })
+          .subscribe({
+            next: () => {
+              this.loadingService.hide();
+              this.cancelEdit();
+            },
+            error: () => this.loadingService.hide(),
+          });
+      } else {
+        this.groceryService
+          .create$({
+            name: this.editItemName.trim(),
+            category: this.editItemCategory,
+            imageUrl: this.editItemImageUrl.trim() || undefined,
+            isInCart: this.isAddingFromSidebar,
+            isChecked: false,
+          })
+          .subscribe({
+            next: () => {
+              if (this.isAddingFromSidebar) {
+                this.createOverviewTask(
+                  this.editItemName.trim(),
+                  this.editItemImageUrl.trim() || undefined
+                );
+              }
+              this.loadingService.hide();
+              this.cancelEdit();
+            },
+            error: () => this.loadingService.hide(),
+          });
       }
-      this.cancelEdit();
     }
   }
 
@@ -276,50 +327,69 @@ export class GroceriesComponent {
 
   // ========== Cart Operations ==========
 
-  async addToCart(id: string): Promise<void> {
-    await this.groceryService.addToCart(id);
+  addToCart(id: string): void {
+    this.groceryService.addToCart$(id).subscribe(() => {
+      const item = this.groceries().find((i) => i.id === id);
+      if (item) {
+        this.createOverviewTask(item.name, item.imageUrl);
+      }
+    });
+  }
+
+  removeFromCart(id: string): void {
     const item = this.groceries().find((i) => i.id === id);
-    if (item) {
-      this.createOverviewTask(item.name, item.imageUrl);
-    }
+    this.groceryService.removeFromCart$(id).subscribe(() => {
+      if (item) {
+        this.removeOverviewTask(item.name);
+      }
+    });
   }
 
-  async removeFromCart(id: string): Promise<void> {
-    const item = this.groceries().find((i) => i.id === id);
-    await this.groceryService.removeFromCart(id);
-    if (item) {
-      this.removeOverviewTask(item.name);
-    }
+  toggleChecked(id: string): void {
+    this.groceryService.toggleChecked$(id).subscribe();
   }
 
-  async toggleChecked(id: string): Promise<void> {
-    await this.groceryService.toggleChecked(id);
-  }
-
-  async clearCart(): Promise<void> {
-    // Collect items to remove tasks for
+  clearCart(): void {
     const itemsToRemove = this.cartItems();
-    await this.groceryService.clearCart();
-    // Remove tasks
-    for (const item of itemsToRemove) {
-      this.removeOverviewTask(item.name);
-    }
+    this.loadingService.show('Clearing cart...');
+
+    this.groceryService.clearCart$().subscribe({
+      next: () => {
+        for (const item of itemsToRemove) {
+          this.removeOverviewTask(item.name);
+        }
+        this.loadingService.hide();
+      },
+      error: () => this.loadingService.hide(),
+    });
   }
 
-  async checkout(): Promise<void> {
+  checkout(): void {
     if (this.cartItems().length === 0) return;
 
-    if (
-      await this.dialogService.confirm('Complete shopping trip and save to history?', 'Checkout')
-    ) {
-      try {
-        await this.groceryService.saveToHistory();
-        await this.groceryService.clearCart();
-      } catch (err) {
-        console.error('Checkout failed', err);
-        await this.dialogService.alert('Failed to save history. Please check your connection.');
-      }
-    }
+    this.dialogService
+      .confirm$('Complete shopping trip and save to history?', 'Checkout')
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.loadingService.show('Saving to history...');
+
+          this.groceryService.saveToHistory$().subscribe({
+            next: () => {
+              this.groceryService.clearCart$().subscribe({
+                next: () => this.loadingService.hide(),
+                error: () => this.loadingService.hide(),
+              });
+            },
+            error: (err) => {
+              console.error('Checkout failed', err);
+              this.loadingService.hide();
+              this.dialogService
+                .alert$('Failed to save history. Please check your connection.')
+                .subscribe();
+            },
+          });
+        }
+      });
   }
 
   // ========== Helper Methods ==========
@@ -360,35 +430,43 @@ export class GroceriesComponent {
     img.src = 'https://placehold.co/200x200/cccccc/ffffff?text=No+Image';
   }
 
-  async resetData(): Promise<void> {
-    if (
-      await this.dialogService.confirm(
+  resetData(): void {
+    this.dialogService
+      .confirm$(
         'This will reset all grocery data to the default seed data. Continue?',
         'Reset Data'
       )
-    ) {
-      await this.groceryService.resetToSeedData();
-    }
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.loadingService.show('Resetting data...');
+          this.groceryService.resetToSeedData$().subscribe({
+            next: () => this.loadingService.hide(),
+            error: () => this.loadingService.hide(),
+          });
+        }
+      });
   }
 
-  private createOverviewTask(title: string, imageUrl?: string) {
+  private createOverviewTask(title: string, imageUrl?: string): void {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 3);
 
-    this.overviewService.createTask({
-      title: title,
-      category: 'groceries',
-      isCompleted: false,
-      dueDate: dueDate,
-      imageUrl: imageUrl,
-    });
+    this.overviewService
+      .createTask$({
+        title: title,
+        category: 'groceries',
+        isCompleted: false,
+        dueDate: dueDate,
+        imageUrl: imageUrl,
+      })
+      .subscribe();
   }
 
-  private async removeOverviewTask(title: string) {
+  private removeOverviewTask(title: string): void {
     const tasks = this.overviewService.tasks();
     const task = tasks.find((t) => t.title === title && t.category === 'groceries');
     if (task) {
-      await this.overviewService.deleteTask(task.id);
+      this.overviewService.deleteTask$(task.id).subscribe();
     }
   }
 }
