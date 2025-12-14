@@ -320,28 +320,6 @@ export class GroceryService implements OnDestroy {
     return this.saveCategoryToFirestore$(newCategory).pipe(map(() => newCategory));
   }
 
-  /**
-   * Legacy Promise-based createCategory
-   * @deprecated Use createCategory$() with subscribe() instead
-   */
-  async createCategory(
-    category: Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault' | 'userId'>
-  ): Promise<CategoryItem> {
-    const userId = this.getCurrentUserId();
-    if (!userId) throw new Error('User must be logged in to create categories');
-
-    const newCategory: CategoryItem = {
-      ...category,
-      id: this.generateCategoryId(category.name),
-      userId,
-      isDefault: false,
-      createdAt: new Date(),
-    };
-
-    await this.saveCategoryToFirestore$(newCategory).toPromise();
-    return newCategory;
-  }
-
   getCategory(id: string): CategoryItem | undefined {
     return this.categoriesSignal().find((cat) => cat.id === id);
   }
@@ -358,22 +336,6 @@ export class GroceryService implements OnDestroy {
 
     const docRef = doc(this.firestore, this.CATEGORIES_COLLECTION, id);
     return from(updateDoc(docRef, updates)).pipe(map(() => ({ ...category, ...updates })));
-  }
-
-  /**
-   * Legacy Promise-based updateCategory
-   * @deprecated Use updateCategory$() with subscribe() instead
-   */
-  async updateCategory(
-    id: string,
-    updates: Partial<Omit<CategoryItem, 'id' | 'createdAt' | 'isDefault' | 'userId'>>
-  ): Promise<CategoryItem | undefined> {
-    const category = this.getCategory(id);
-    if (!category || category.isDefault) return undefined;
-
-    const docRef = doc(this.firestore, this.CATEGORIES_COLLECTION, id);
-    await updateDoc(docRef, updates);
-    return { ...category, ...updates };
   }
 
   deleteCategory(id: string): { success: boolean; error?: string } {
@@ -473,36 +435,6 @@ export class GroceryService implements OnDestroy {
   }
 
   /**
-   * Legacy Promise-based create
-   * Includes duplicate validation to prevent items with the same name
-   * @deprecated Use create$() with subscribe() instead
-   */
-  async create(
-    item: Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
-  ): Promise<GroceryItem> {
-    const userId = this.getCurrentUserId();
-    if (!userId) throw new Error('User must be logged in to create items');
-
-    // Check for duplicate item (case-insensitive)
-    const existingItem = this.getItemByName(item.name);
-    if (existingItem) {
-      throw new Error(`An item named "${existingItem.name}" already exists.`);
-    }
-
-    const newItem: GroceryItem = {
-      ...item,
-      id: this.generateId(),
-      userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, newItem.id);
-    await setDoc(docRef, newItem);
-    return newItem;
-  }
-
-  /**
    * Update grocery item - Observable based
    * Includes duplicate validation when renaming items
    */
@@ -534,52 +466,11 @@ export class GroceryService implements OnDestroy {
   }
 
   /**
-   * Legacy Promise-based update
-   * Includes duplicate validation when renaming items
-   * @deprecated Use update$() with subscribe() instead
-   */
-  async update(
-    id: string,
-    updates: Partial<Omit<GroceryItem, 'id' | 'createdAt' | 'userId'>>
-  ): Promise<GroceryItem | undefined> {
-    const item = this.groceriesSignal().find((i) => i.id === id);
-    if (!item) return undefined;
-
-    // Check for duplicate name if name is being updated
-    if (updates.name) {
-      const normalizedNewName = updates.name.trim().toLowerCase();
-      const existingItem = this.groceriesSignal().find(
-        (i) => i.id !== id && i.name.toLowerCase() === normalizedNewName
-      );
-      if (existingItem) {
-        throw new Error(`An item named "${existingItem.name}" already exists.`);
-      }
-    }
-
-    const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, id);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: new Date(),
-    });
-    return { ...item, ...updates, updatedAt: new Date() };
-  }
-
-  /**
    * Delete grocery item - Observable based
    */
   delete$(id: string): Observable<boolean> {
     const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, id);
     return from(deleteDoc(docRef)).pipe(map(() => true));
-  }
-
-  /**
-   * Legacy Promise-based delete
-   * @deprecated Use delete$() with subscribe() instead
-   */
-  async delete(id: string): Promise<boolean> {
-    const docRef = doc(this.firestore, this.GROCERIES_COLLECTION, id);
-    await deleteDoc(docRef);
-    return true;
   }
 
   getById(id: string): GroceryItem | undefined {
@@ -594,26 +485,10 @@ export class GroceryService implements OnDestroy {
   }
 
   /**
-   * Legacy Promise-based addToCart
-   * @deprecated Use addToCart$() with subscribe() instead
-   */
-  async addToCart(id: string): Promise<void> {
-    await this.update(id, { isInCart: true });
-  }
-
-  /**
    * Remove from cart - Observable based
    */
   removeFromCart$(id: string): Observable<void> {
     return this.update$(id, { isInCart: false, isChecked: false }).pipe(map(() => undefined));
-  }
-
-  /**
-   * Legacy Promise-based removeFromCart
-   * @deprecated Use removeFromCart$() with subscribe() instead
-   */
-  async removeFromCart(id: string): Promise<void> {
-    await this.update(id, { isInCart: false, isChecked: false });
   }
 
   /**
@@ -628,17 +503,6 @@ export class GroceryService implements OnDestroy {
   }
 
   /**
-   * Legacy Promise-based toggleChecked
-   * @deprecated Use toggleChecked$() with subscribe() instead
-   */
-  async toggleChecked(id: string): Promise<void> {
-    const item = this.getById(id);
-    if (item) {
-      await this.update(id, { isChecked: !item.isChecked });
-    }
-  }
-
-  /**
    * Clear cart - Observable based
    */
   clearCart$(): Observable<void> {
@@ -649,18 +513,6 @@ export class GroceryService implements OnDestroy {
       this.update$(item.id, { isInCart: false, isChecked: false })
     );
     return forkJoin(updates$).pipe(map(() => undefined));
-  }
-
-  /**
-   * Legacy Promise-based clearCart
-   * @deprecated Use clearCart$() with subscribe() instead
-   */
-  async clearCart(): Promise<void> {
-    const cartItems = this.cartItems();
-    const updates = cartItems.map((item) =>
-      this.update(item.id, { isInCart: false, isChecked: false })
-    );
-    await Promise.all(updates);
   }
 
   /**
@@ -733,17 +585,6 @@ export class GroceryService implements OnDestroy {
   }
 
   /**
-   * Legacy Promise-based resetToSeedData
-   * @deprecated Use resetToSeedData$() with subscribe() instead
-   */
-  async resetToSeedData(): Promise<void> {
-    const groceries = this.groceriesSignal();
-    const deletePromises = groceries.map((item) => this.delete(item.id));
-    await Promise.all(deletePromises);
-    this.isSeededSignal.set(false);
-  }
-
-  /**
    * Save to history - Observable based
    */
   saveToHistory$(): Observable<void> {
@@ -773,37 +614,6 @@ export class GroceryService implements OnDestroy {
     return from(setDoc(docRef, historyData));
   }
 
-  /**
-   * Legacy Promise-based saveToHistory
-   * @deprecated Use saveToHistory$() with subscribe() instead
-   */
-  async saveToHistory(): Promise<void> {
-    const userId = this.getCurrentUserId();
-    if (!userId) return;
-
-    const items = this.cartItems();
-    if (items.length === 0) return;
-
-    const historyId = `history_${Date.now()}`;
-    const docRef = doc(this.firestore, this.HISTORY_COLLECTION, historyId);
-
-    const historyData = {
-      id: historyId,
-      userId,
-      date: new Date(),
-      itemCount: items.length,
-      items: items.map((i) => ({
-        id: i.id,
-        name: i.name,
-        category: i.category,
-        checked: i.isChecked,
-      })),
-      completed: true,
-    };
-
-    await setDoc(docRef, historyData);
-  }
-
   private generateId(): string {
     return `grocery_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
@@ -815,7 +625,7 @@ export class GroceryService implements OnDestroy {
   private checkAndMigrateData(userId: string, currentGroceries: GroceryItem[]): void {
     if (this.hasMigratedThisSession) return;
 
-    const SEED_VERSION = 'v17';
+    const SEED_VERSION = 'v18';
     const storedVersion = localStorage.getItem(`homeneeds_seed_version_${userId}`);
 
     if (storedVersion !== SEED_VERSION) {
@@ -854,13 +664,16 @@ export class GroceryService implements OnDestroy {
     ];
     console.log(`Total seed data count: ${allSeedData.length}`);
 
-    const missingItems = allSeedData.filter(
-      (seedItem) => !items.some((existing) => existing.name === seedItem.name)
-    );
+    const normalizedExistingNames = new Set(items.map((i) => i.name.toLowerCase().trim()));
+
+    const missingItems = allSeedData.filter((seedItem) => {
+      const normalizedSeedName = seedItem.name.toLowerCase().trim();
+      return !normalizedExistingNames.has(normalizedSeedName);
+    });
 
     if (missingItems.length > 0) {
       console.log(`Adding ${missingItems.length} missing items...`);
-      console.log('Missing items:', missingItems.map((i) => i.name).join(', '));
+      // console.log('Missing items:', missingItems.map((i) => i.name).join(', '));
 
       const creates$ = missingItems.map((item) => this.create$(item));
       return forkJoin(creates$).pipe(
@@ -868,40 +681,8 @@ export class GroceryService implements OnDestroy {
         map(() => undefined)
       );
     } else {
-      console.log('All seed items are present.');
+      console.log('✅ All seed items are present.');
       return of(undefined);
-    }
-  }
-
-  /**
-   * Legacy Promise-based migrateMissingSeedData
-   * @deprecated Use migrateMissingSeedData$() with subscribe() instead
-   */
-  async migrateMissingSeedData(currentItems?: GroceryItem[]): Promise<void> {
-    console.log('Checking for missing seed items...');
-    const items = currentItems ?? this.groceriesSignal();
-    console.log(`Current items count: ${items.length}`);
-
-    const allSeedData = [
-      ...PRODUCE_SEED_DATA,
-      ...DAIRY_SEED_DATA,
-      ...PANTRY_SEED_DATA,
-      ...BABY_SEED_DATA,
-      ...CLEANING_SEED_DATA,
-    ];
-    console.log(`Total seed data count: ${allSeedData.length}`);
-
-    const missingItems = allSeedData.filter(
-      (seedItem) => !items.some((existing) => existing.name === seedItem.name)
-    );
-
-    if (missingItems.length > 0) {
-      console.log(`Adding ${missingItems.length} missing items...`);
-      console.log('Missing items:', missingItems.map((i) => i.name).join(', '));
-      await Promise.all(missingItems.map((item) => this.create(item)));
-      console.log(`✅ Successfully added ${missingItems.length} items`);
-    } else {
-      console.log('All seed items are present.');
     }
   }
 
